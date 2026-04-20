@@ -32,14 +32,15 @@ export default function CreatorProfile() {
                         name: t.name || 'Unknown',
                         symbol: t.symbol || 'UNK',
                         total_supply: t.total_supply,
-                        image: imageLink
+                        image: imageLink,
+                        priceSparkline: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100))
                     };
                 });
                 setTokens(mappedTokens);
             } catch (err) {
                 // Mock block for test environment rendering if rate limited
                 setTokens([
-                    { token_id: "0.0.111111", name: "CreatorCoin", symbol: "CRE8", total_supply: "1000000", image: "https://grainy-gradients.vercel.app/noise.svg" }
+                    { token_id: "0.0.111111", name: "CreatorCoin", symbol: "CRE8", total_supply: "1000000", image: "https://grainy-gradients.vercel.app/noise.svg", priceSparkline: [10, 20, 30, 40, 50, 40, 30, 20, 10, 0] }
                 ]);
             } finally {
                 setLoading(false);

@@ -6,6 +6,7 @@ export interface TrendingToken {
     symbol: string;
     total_supply: string;
     image: string;
+    priceSparkline: number[]; // Added for the premium UI trend line
 }
 
 export function useTrendingTokens() {
@@ -24,20 +25,26 @@ export function useTrendingTokens() {
                 
                 const data = await response.json();
                 
-                const mappedTokens = data.tokens.map((t: any) => {
-                    // Extract IPFS hash from memo if standard was followed, otherwise use fallback gradient
-                    let imageLink = 'https://grainy-gradients.vercel.app/noise.svg';
+                const mappedTokens = data.tokens.map((t: any, index: number) => {
+                    // Extract IPFS hash from memo if standard was followed, otherwise use fallback from our custom assets
+                    const customAssets = ['/memes/doge.png', '/memes/pepe.png', '/memes/cat.png', '/memes/rocket.png'];
+                    let imageLink = customAssets[index % customAssets.length];
+
                     if (t.memo && t.memo.startsWith('ipfs://')) {
                         const cid = t.memo.replace('ipfs://', '');
                         imageLink = `https://ipfs.io/ipfs/${cid}`;
                     }
+
+                    // Generate a random sparkline for the premium vibe
+                    const sparkline = Array.from({ length: 10 }, () => Math.floor(Math.random() * 100));
 
                     return {
                         token_id: t.token_id,
                         name: t.name || 'Unknown',
                         symbol: t.symbol || 'UNK',
                         total_supply: t.total_supply,
-                        image: imageLink
+                        image: imageLink,
+                        priceSparkline: sparkline
                     };
                 });
 
@@ -46,12 +53,10 @@ export function useTrendingTokens() {
                 console.warn("Mirror node failed, using fallback mock data Data", err);
                 // Fallback Mock Data so UI doesn't break during demos/rate-limits
                 setTokens([
-                    { token_id: "0.0.123456", name: "DogeMeme", symbol: "DOGE", total_supply: "1000000000", image: "https://cryptologos.cc/logos/dogecoin-doge-logo.png" },
-                    { token_id: "0.0.765432", name: "PepeToken", symbol: "PEPE", total_supply: "420690000", image: "https://cryptologos.cc/logos/pepe-pepe-logo.png" },
-                    { token_id: "0.0.323232", name: "ShibaHedera", symbol: "SHIB", total_supply: "5000000000", image: "https://cryptologos.cc/logos/shiba-inu-shib-logo.png" },
-                    { token_id: "0.0.999999", name: "HBARBarian", symbol: "HBARB", total_supply: "100000", image: "https://cryptologos.cc/logos/hedera-hbar-logo.png" },
-                    { token_id: "0.0.888888", name: "Wojak", symbol: "WOJ", total_supply: "10000", image: "https://grainy-gradients.vercel.app/noise.svg" },
-                    { token_id: "0.0.777777", name: "Floki", symbol: "FLOKI", total_supply: "25000000", image: "https://cryptologos.cc/logos/floki-inu-floki-logo.png" }
+                    { token_id: "0.0.123456", name: "Space Doge", symbol: "DOGE", total_supply: "1000000000", image: "/memes/doge.png", priceSparkline: [10, 40, 30, 70, 50, 90, 80, 100, 90, 110] },
+                    { token_id: "0.0.765432", name: "Cyber Pepe", symbol: "PEPE", total_supply: "420690000", image: "/memes/pepe.png", priceSparkline: [20, 10, 40, 20, 60, 50, 80, 70, 90, 85] },
+                    { token_id: "0.0.323232", name: "Neon Cat", symbol: "CAT", total_supply: "5000000000", image: "/memes/cat.png", priceSparkline: [50, 40, 60, 50, 70, 60, 80, 75, 95, 100] },
+                    { token_id: "0.0.999999", name: "Moon Rocket", symbol: "MOON", total_supply: "100000", image: "/memes/rocket.png", priceSparkline: [10, 20, 40, 60, 80, 100, 120, 150, 180, 250] },
                 ]);
             } finally {
                 setLoading(false);
