@@ -20,7 +20,7 @@ export default function SwapPage() {
     const { expectedOutput, minimumOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", DEMO_TOKEN_ID);
 
     const executeSwap = async () => {
-        if (!hashConnect || !pairingData?.topic) {
+        if (!hashConnect || !(pairingData as any)?.topic) {
             setStatus("Please connect your HashPack wallet to proceed.");
             return;
         }

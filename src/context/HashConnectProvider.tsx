@@ -80,7 +80,7 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const disconnect = async () => {
-    if (hashConnect && pairingData?.topic) {
+    if (hashConnect && (pairingData as any)?.topic) {
       await hashConnect.disconnect(pairingData.topic);
       setPairingData(null);
       setAccountId(null);
