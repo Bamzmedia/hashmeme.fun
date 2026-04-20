@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MirrorNodeService } from '@/services/MirrorNodeService';
-import { SaucerSwapService } from '@/services/SaucerSwapService';
+import { LedgerPriceService } from '@/services/LedgerPriceService';
 
 export interface TrendingToken {
     token_id: string;
@@ -24,14 +24,11 @@ export function useTrendingTokens(initialFilter: TokenFilter = 'all') {
         setLoading(true);
         try {
             const mirrorService = MirrorNodeService.getInstance();
-            const saucerService = SaucerSwapService.getInstance();
+            const ledgerPrice = LedgerPriceService.getInstance();
             
-            // 1. Parallel fetch of tokens and DEX metrics
+            // 1. Fetch Tokens from Mirror Node
             const fetchLimit = filter === 'hot' ? 100 : 20;
-            const [rawTokens, dexMetrics] = await Promise.all([
-                mirrorService.getTrendingTokens(fetchLimit),
-                saucerService.getTokenMetrics()
-            ]);
+            const rawTokens = await mirrorService.getTrendingTokens(fetchLimit);
             
             if (!rawTokens || rawTokens.length === 0) {
                 setTokens([]);
@@ -49,8 +46,8 @@ export function useTrendingTokens(initialFilter: TokenFilter = 'all') {
                 processedTokens = processedTokens.slice(0, 20);
             }
 
-            // 3. Merging mirror data with DEX pricing
-            const mappedTokens = processedTokens.map((t: any, index: number) => {
+            // 3. Resolve On-Chain Prices for current batch
+            const mappedTokens = await Promise.all(processedTokens.map(async (t: any, index: number) => {
                 const customAssets = ['/memes/doge.png', '/memes/pepe.png', '/memes/cat.png', '/memes/rocket.png'];
                 let imageLink = customAssets[index % customAssets.length];
 
@@ -59,10 +56,8 @@ export function useTrendingTokens(initialFilter: TokenFilter = 'all') {
                     imageLink = `https://ipfs.io/ipfs/${cid}`;
                 }
 
-                // Match with DEX data
-                const dexData = dexMetrics.find((m: any) => m.id === t.token_id);
-                const priceUsd = dexData ? Number(dexData.priceUsd) : 0.0000001;
-                const priceChange = dexData ? Number(dexData.priceChange24h) : 0;
+                // Resolve Live Price from Ledger
+                const priceUsd = await ledgerPrice.getTokenPrice(t.token_id);
 
                 return {
                     token_id: t.token_id,
@@ -71,14 +66,14 @@ export function useTrendingTokens(initialFilter: TokenFilter = 'all') {
                     total_supply: t.total_supply,
                     image: imageLink,
                     priceUsd,
-                    priceChange24h: priceChange,
+                    priceChange24h: 0, // Ledger calculation for change requires history storage
                     priceSparkline: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100))
                 };
-            });
+            }));
 
             setTokens(mappedTokens);
         } catch (err) {
-            console.error("Data merge failed in hook:", err);
+            console.error("Ledger sync failed in hook:", err);
             setTokens([]);
         } finally {
             setLoading(false);
@@ -87,7 +82,8 @@ export function useTrendingTokens(initialFilter: TokenFilter = 'all') {
 
     useEffect(() => {
         fetchTokens();
-        const interval = setInterval(fetchTokens, 60000); // 1 minute price refresh
+        // Polling interval for on-chain reserves
+        const interval = setInterval(fetchTokens, 90000); 
         return () => clearInterval(interval);
     }, [fetchTokens]);
 
