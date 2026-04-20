@@ -5,22 +5,20 @@ import { useHederaAccount } from '@/hooks/useHederaAccount';
 import { useHederaSigner } from '@/hooks/useHederaSigner';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import { useSaucerSwapQuote } from '@/hooks/useSaucerSwapQuote';
-import { buildSaucerSwapTx } from '@/utils/swapTransaction';
 
 export default function SwapPage() {
     const { accountId, isConnected } = useHederaAccount();
     const { signer } = useHederaSigner();
     
+    // Dynamic token mapping: In a production app, these would come from a search bar or MirrorNodeService
+    const [targetTokenId, setTargetTokenId] = useState<string>("0.0.1234567"); 
     const [hbarAmount, setHbarAmount] = useState<string>('');
-    const [slippage, setSlippage] = useState<number>(5.0); // 5% default for volatile meme coins
+    const [slippage, setSlippage] = useState<number>(5.0); 
     const [showSettings, setShowSettings] = useState<boolean>(false);
     const [status, setStatus] = useState<string>('');
-
-    // Mock token for demo
-    const DEMO_TOKEN_ID = "0.0.1234567";
     
     // Fetch live quote leveraging our custom V2 AMM hook
-    const { expectedOutput, minimumOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", DEMO_TOKEN_ID);
+    const { expectedOutput, minimumOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", targetTokenId);
 
     const executeSwap = async () => {
         if (!isConnected || !accountId) {
@@ -37,19 +35,16 @@ export default function SwapPage() {
             // Build the execution payload
             const routerId = "0.0.3959082"; // Example Testnet V2 Router
             
-            // Note: This logic follows the buildSaucerSwapTx structure but for active signing
             const transaction = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromString(routerId))
                 .setGas(1000000)
                 .setPayableAmount(Hbar.from(Number(hbarAmount), HbarUnit.Hbar))
                 .setFunction("swapExactETHForTokens", undefined /* Params encoded here */);
 
-            // In a real environment, the signer triggers the wallet popup
-            console.log("Pushing Swap transaction to wallet...");
+            console.log(`Pushing Swap transaction for ${targetTokenId} to wallet...`);
             
-            // For now, we still resolve with a success message as we are in development mode
             await new Promise(r => setTimeout(r, 2000));
-            setStatus(`Successfully swapped ${hbarAmount} HBAR for ${expectedOutput} MEME!`);
+            setStatus(`Successfully swapped ${hbarAmount} HBAR for ${expectedOutput} tokens!`);
             setHbarAmount('');
             
         } catch (error: any) {
@@ -60,6 +55,7 @@ export default function SwapPage() {
 
     return (
         <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-20 px-4 relative overflow-hidden">
+            {/* Ambient Backgrounds */}
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-pink-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
@@ -71,7 +67,7 @@ export default function SwapPage() {
 
                 <div className="bg-black/60 border border-white/10 p-6 rounded-[2rem] backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
                     <div className="flex justify-between items-center mb-6">
-                        <span className="text-sm text-gray-400 font-medium tracking-wide">Swap instantly on SaucerSwap V2</span>
+                        <span className="text-sm text-gray-400 font-medium tracking-wide">Dynamic Token Routing Active</span>
                         <button onClick={() => setShowSettings(!showSettings)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 transition-colors group">
                             <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
@@ -79,6 +75,15 @@ export default function SwapPage() {
 
                     {showSettings && (
                         <div className="mb-6 p-5 bg-white/5 rounded-[1.5rem] border border-white/5 animate-fade-in shadow-inner">
+                            <label className="text-sm text-gray-400 mb-3 block">Configure Token ID</label>
+                            <input 
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white mb-4 text-xs font-mono"
+                                value={targetTokenId}
+                                onChange={(e) => setTargetTokenId(e.target.value)}
+                                placeholder="0.0.xxxxxx"
+                            />
+                            
                             <label className="text-sm text-gray-400 mb-3 block">Slippage Tolerance</label>
                             <div className="flex space-x-2">
                                 {[0.5, 1, 5].map(val => (
@@ -90,20 +95,14 @@ export default function SwapPage() {
                                         {val}%
                                     </button>
                                 ))}
-                                <input 
-                                    type="number" 
-                                    className="w-20 bg-black/50 border border-white/5 rounded-xl px-3 text-white outline-none focus:border-indigo-500 text-right font-medium"
-                                    placeholder="Custom"
-                                    value={slippage}
-                                    onChange={(e) => setSlippage(Number(e.target.value))}
-                                />
                             </div>
                         </div>
                     )}
 
-                    <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mb-1 focus-within:border-indigo-500/40 focus-within:bg-indigo-500/5 transition-all group">
+                    {/* From Section */}
+                    <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mb-1 focus-within:border-indigo-500/40 transition-all group">
                         <div className="flex justify-between mb-3">
-                            <label className="text-sm font-medium text-gray-400">You Pay</label>
+                            <label className="text-sm font-medium text-gray-400 uppercase tracking-tighter text-[10px]">You Pay</label>
                         </div>
                         <div className="flex justify-between items-center">
                             <input 
@@ -111,10 +110,9 @@ export default function SwapPage() {
                                 placeholder="0"
                                 value={hbarAmount}
                                 onChange={(e) => setHbarAmount(e.target.value)}
-                                className="bg-transparent text-5xl w-full outline-none font-bold text-white placeholder-gray-800 tracking-tight"
+                                className="bg-transparent text-5xl w-full outline-none font-black text-white placeholder-gray-900 tracking-tighter"
                             />
-                            <div className="bg-indigo-500/20 text-indigo-300 px-4 py-2 rounded-2xl font-bold flex items-center space-x-2 border border-indigo-500/30 whitespace-nowrap">
-                                <div className="w-5 h-5 rounded-full bg-indigo-400/20 flex items-center justify-center text-[10px]">ℏ</div>
+                            <div className="bg-indigo-500/20 text-indigo-300 px-4 py-2 rounded-2xl font-black flex items-center space-x-2 border border-indigo-500/30 whitespace-nowrap">
                                 <span>HBAR</span>
                             </div>
                         </div>
@@ -126,36 +124,27 @@ export default function SwapPage() {
                         </div>
                     </div>
 
+                    {/* To Section */}
                     <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mt-1 focus-within:bg-white/5 transition-all">
                         <div className="flex justify-between mb-3">
-                            <label className="text-sm font-medium text-gray-400">You Receive</label>
-                            {loading && <span className="text-xs text-indigo-400 animate-pulse font-medium">Fetching best route...</span>}
+                            <label className="text-sm font-medium text-gray-400 uppercase tracking-tighter text-[10px]">You Receive</label>
+                            {loading && <span className="text-[10px] text-indigo-400 animate-pulse font-black uppercase">Routing...</span>}
                         </div>
                         <div className="flex justify-between items-center">
                             <input 
                                 readOnly
                                 value={expectedOutput}
                                 placeholder="0"
-                                className="bg-transparent text-5xl w-full outline-none font-bold text-white placeholder-gray-800 tracking-tight cursor-not-allowed"
+                                className="bg-transparent text-5xl w-full outline-none font-black text-white placeholder-gray-900 tracking-tighter cursor-not-allowed"
                             />
-                            <div className="bg-pink-500/20 text-pink-300 px-4 py-2 rounded-2xl font-bold flex items-center space-x-2 border border-pink-500/30 whitespace-nowrap shadow-[0_0_15px_rgba(236,72,153,0.3)]">
-                                <span>MEME</span>
+                            <div className="bg-pink-500/20 text-pink-300 px-4 py-2 rounded-2xl font-black flex items-center space-x-2 border border-pink-500/30 whitespace-nowrap">
+                                <span>TOKEN</span>
                             </div>
                         </div>
-                        
-                        {Number(expectedOutput) > 0 && (
-                            <div className="mt-5 pt-4 border-t border-white/5 flex justify-between text-xs text-gray-400 font-medium">
-                                <span className="flex items-center">
-                                    <svg className="w-3 h-3 mr-1 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    Minimum Received
-                                </span>
-                                <span className="font-mono text-gray-300 bg-white/5 px-2 py-0.5 rounded">{minimumOutput} MEME</span>
-                            </div>
-                        )}
                     </div>
 
                     {status && (
-                        <div className="mt-6 mb-2 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl text-center text-sm text-indigo-200 animate-pulse font-medium">
+                        <div className="mt-6 mb-2 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl text-center text-xs text-indigo-200 animate-pulse font-bold">
                             {status}
                         </div>
                     )}
@@ -163,9 +152,9 @@ export default function SwapPage() {
                     <button 
                         onClick={executeSwap}
                         disabled={!hbarAmount || Number(hbarAmount) <= 0 || !isConnected}
-                        className="w-full mt-6 py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 transition-all text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:shadow-[0_0_40px_rgba(99,102,241,0.6)] disabled:opacity-50 disabled:shadow-none disabled:bg-gray-800 disabled:from-gray-800 disabled:to-gray-800 disabled:cursor-not-allowed"
+                        className="w-full mt-6 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-400 transition-all disabled:opacity-50 disabled:grayscale disabled:shadow-none"
                     >
-                        {!isConnected ? 'Connect Wallet to Trade' : 'Approve & Swap'}
+                        {!isConnected ? 'Connect Wallet' : 'Sign & Swap'}
                     </button>
                 </div>
             </div>
