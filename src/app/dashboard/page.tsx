@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHederaAccount } from '@/hooks/useHederaAccount';
 import { useHederaSigner } from '@/hooks/useHederaSigner';
 import WalletConnectButton from '@/components/WalletConnectButton';
+import BackButton from '@/components/BackButton';
+
+const FORM_STORAGE_KEY = 'hashmeme_launch_form_v1';
 
 export default function DashboardPage() {
   const { accountId, isConnected } = useHederaAccount();
@@ -12,13 +15,30 @@ export default function DashboardPage() {
   const [formData, setFormData] = useState({
     name: '',
     symbol: '',
-    decimals: '8', // Default Hedera standard
+    decimals: '8',
     initialSupply: '1000000',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [createdTokenId, setCreatedTokenId] = useState<string | null>(null);
+
+  // 1. Persistence: Restore data on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+    if (savedData) {
+        try {
+            setFormData(JSON.parse(savedData));
+        } catch (e) {
+            console.warn("Failed to parse saved form data", e);
+        }
+    }
+  }, []);
+
+  // 2. Persistence: Save data on change
+  useEffect(() => {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
 
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +55,6 @@ export default function DashboardPage() {
     setStatus("Uploading image to IPFS via Pinata...");
 
     try {
-        // 1. Upload IPFS
         const data = new FormData();
         data.append('file', imageFile);
 
@@ -46,18 +65,13 @@ export default function DashboardPage() {
         
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok) throw new Error(uploadData.error || "Image upload failed");
-        
         const cid = uploadData.cid;
 
-        // 2. Launch HTS Token
         setStatus(`Image pinned to IPFS (${cid}). Requesting wallet approval for token launch...`);
 
-        // ACTIVE HEDERA SDK FLOW
         try {
-            // Dynamic import to avoid SSR issues with Hedera SDK
             const { TokenCreateTransaction, AccountId, TokenSupplyType, TokenType } = await import('@hashgraph/sdk');
             
-            // Build the Native Transaction
             const transaction = new TokenCreateTransaction()
                 .setTokenName(formData.name)
                 .setTokenSymbol(formData.symbol)
@@ -68,14 +82,7 @@ export default function DashboardPage() {
                 .setTokenType(TokenType.FungibleCommon)
                 .setSupplyType(TokenSupplyType.Infinite);
 
-            // Freeze with signer and execute
-            // In a real WC v2 setup, 'signer' implemented standard hedera_signAndExecuteTransaction
-            // We use the bridge utility or the wallet will natively handle the request.
-            
             console.log("Preparing transaction for wallet signing...");
-            
-            // Note: Since we are in a bridge state, we also trigger the backend to track the launch
-            // or we wait for the result of the wallet execution.
             
             const launchRes = await fetch('/api/launch', {
                 method: 'POST',
@@ -92,6 +99,10 @@ export default function DashboardPage() {
 
             setCreatedTokenId(launchData.tokenId);
             setStatus('');
+            
+            // 3. Persistence Cleanup: Clear after success
+            localStorage.removeItem(FORM_STORAGE_KEY);
+            
         } catch (sdkError: any) {
             console.error("SDK Error:", sdkError);
             throw new Error(`Wallet signing failed: ${sdkError.message || 'Check your wallet app'}`);
@@ -117,6 +128,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl relative">
+            
+            {/* Top Navigation Row */}
+            {!createdTokenId && (
+                <div className="flex justify-start mb-8 -mt-2 -ml-2">
+                    <BackButton />
+                </div>
+            )}
+
             {createdTokenId ? (
                 <div className="text-center py-10 animate-fade-in">
                     <div className="w-24 h-24 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
@@ -127,6 +146,15 @@ export default function DashboardPage() {
                     <div className="inline-block bg-black/40 px-8 py-4 rounded-xl border border-white/10">
                         <p className="text-sm text-gray-500 mb-1">Hedera Token ID</p>
                         <p className="font-mono text-2xl text-indigo-300 font-bold">{createdTokenId}</p>
+                    </div>
+                    
+                    <div className="mt-12">
+                        <button 
+                            onClick={() => setCreatedTokenId(null)}
+                            className="text-indigo-400 font-bold text-sm hover:text-indigo-300 transition-colors"
+                        >
+                            Launch Another Token
+                        </button>
                     </div>
                 </div>
             ) : (
@@ -193,7 +221,7 @@ export default function DashboardPage() {
                             {imageFile ? (
                                 <div className="animate-fade-in">
                                     <span className="text-emerald-400 font-medium block mb-1">Ready for Pinata</span>
-                                    <span className="text-gray-400 text-sm">{imageFile.name}</span>
+                                    <span className="text-gray-400 text-sm">{imageFile?.name}</span>
                                 </div>
                             ) : (
                                 <span className="text-gray-500">Click or drag image to upload to IPFS</span>
@@ -210,7 +238,7 @@ export default function DashboardPage() {
                     <button 
                         type="submit"
                         disabled={loading || !isConnected}
-                        className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 transition-all text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:from-purple-400 transition-all text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                         {loading ? 'Processing...' : (!isConnected ? 'Connect Wallet First' : 'Launch HTS Token')}
                     </button>
