@@ -23,7 +23,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [createdTokenId, setCreatedTokenId] = useState<string | null>(null);
 
-  // 1. Persistence: Restore data on mount
   useEffect(() => {
     const savedData = localStorage.getItem(FORM_STORAGE_KEY);
     if (savedData) {
@@ -35,14 +34,13 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 2. Persistence: Save data on change
   useEffect(() => {
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [formData]);
 
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isConnected) {
+    if (!isConnected || !signer) {
         setStatus("Please connect your wallet first!");
         return;
     }
@@ -72,6 +70,7 @@ export default function DashboardPage() {
         try {
             const { TokenCreateTransaction, AccountId, TokenSupplyType, TokenType } = await import('@hashgraph/sdk');
             
+            // Build the Native Transaction
             const transaction = new TokenCreateTransaction()
                 .setTokenName(formData.name)
                 .setTokenSymbol(formData.symbol)
@@ -82,8 +81,13 @@ export default function DashboardPage() {
                 .setTokenType(TokenType.FungibleCommon)
                 .setSupplyType(TokenSupplyType.Infinite);
 
-            console.log("Preparing transaction for wallet signing...");
+            // NATIVE SIGNING TRIGGER
+            console.log("Serializing and pushing to HashPack Extension...");
+            const response = await signer.executeTransaction(transaction);
             
+            console.log("Wallet response received:", response);
+
+            // Register with our backend tracking
             const launchRes = await fetch('/api/launch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -99,13 +103,11 @@ export default function DashboardPage() {
 
             setCreatedTokenId(launchData.tokenId);
             setStatus('');
-            
-            // 3. Persistence Cleanup: Clear after success
             localStorage.removeItem(FORM_STORAGE_KEY);
             
         } catch (sdkError: any) {
-            console.error("SDK Error:", sdkError);
-            throw new Error(`Wallet signing failed: ${sdkError.message || 'Check your wallet app'}`);
+            console.error("Signing Error:", sdkError);
+            throw new Error(`Wallet signing failed: ${sdkError.message || 'The request was canceled or timed out.'}`);
         }
 
     } catch (error: any) {
@@ -129,7 +131,6 @@ export default function DashboardPage() {
 
         <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl relative">
             
-            {/* Top Navigation Row */}
             {!createdTokenId && (
                 <div className="flex justify-start mb-8 -mt-2 -ml-2">
                     <BackButton />
@@ -238,7 +239,7 @@ export default function DashboardPage() {
                     <button 
                         type="submit"
                         disabled={loading || !isConnected}
-                        className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:from-purple-400 transition-all text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 transition-all text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
                         {loading ? 'Processing...' : (!isConnected ? 'Connect Wallet First' : 'Launch HTS Token')}
                     </button>

@@ -10,7 +10,7 @@ export default function SwapPage() {
     const { accountId, isConnected } = useHederaAccount();
     const { signer } = useHederaSigner();
     
-    // Dynamic token mapping: In a production app, these would come from a search bar or MirrorNodeService
+    // Dynamic token mapping
     const [targetTokenId, setTargetTokenId] = useState<string>("0.0.1234567"); 
     const [hbarAmount, setHbarAmount] = useState<string>('');
     const [slippage, setSlippage] = useState<number>(5.0); 
@@ -21,12 +21,12 @@ export default function SwapPage() {
     const { expectedOutput, minimumOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", targetTokenId);
 
     const executeSwap = async () => {
-        if (!isConnected || !accountId) {
+        if (!isConnected || !accountId || !signer) {
             setStatus("Please connect your wallet to proceed.");
             return;
         }
 
-        setStatus("Please approve the SaucerSwap Router transaction in your wallet...");
+        setStatus("Requesting wallet approval for SaucerSwap transaction...");
 
         try {
             // ACTIVE HEDERA SIGNING FLOW
@@ -41,9 +41,11 @@ export default function SwapPage() {
                 .setPayableAmount(Hbar.from(Number(hbarAmount), HbarUnit.Hbar))
                 .setFunction("swapExactETHForTokens", undefined /* Params encoded here */);
 
-            console.log(`Pushing Swap transaction for ${targetTokenId} to wallet...`);
+            // NATIVE SIGNING TRIGGER
+            console.log(`Pushing Swap for ${targetTokenId} to HashPack...`);
+            const response = await signer.executeTransaction(transaction);
             
-            await new Promise(r => setTimeout(r, 2000));
+            console.log("Swap successful:", response);
             setStatus(`Successfully swapped ${hbarAmount} HBAR for ${expectedOutput} tokens!`);
             setHbarAmount('');
             
@@ -55,7 +57,6 @@ export default function SwapPage() {
 
     return (
         <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-20 px-4 relative overflow-hidden">
-            {/* Ambient Backgrounds */}
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-pink-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
@@ -67,7 +68,7 @@ export default function SwapPage() {
 
                 <div className="bg-black/60 border border-white/10 p-6 rounded-[2rem] backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
                     <div className="flex justify-between items-center mb-6">
-                        <span className="text-sm text-gray-400 font-medium tracking-wide">Dynamic Token Routing Active</span>
+                        <span className="text-sm text-gray-400 font-medium tracking-wide">Native Bridge Active</span>
                         <button onClick={() => setShowSettings(!showSettings)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 transition-colors group">
                             <svg className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
@@ -99,7 +100,6 @@ export default function SwapPage() {
                         </div>
                     )}
 
-                    {/* From Section */}
                     <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mb-1 focus-within:border-indigo-500/40 transition-all group">
                         <div className="flex justify-between mb-3">
                             <label className="text-sm font-medium text-gray-400 uppercase tracking-tighter text-[10px]">You Pay</label>
@@ -124,7 +124,6 @@ export default function SwapPage() {
                         </div>
                     </div>
 
-                    {/* To Section */}
                     <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mt-1 focus-within:bg-white/5 transition-all">
                         <div className="flex justify-between mb-3">
                             <label className="text-sm font-medium text-gray-400 uppercase tracking-tighter text-[10px]">You Receive</label>

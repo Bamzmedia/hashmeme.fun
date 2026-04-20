@@ -15,6 +15,10 @@ export function useHederaAccount() {
                 setIsResolving(true);
                 const id = await getHederaId(address);
                 setAccountId(id);
+                // Persist for the signer bridge
+                if (id) {
+                    localStorage.setItem('hashmeme_last_account_id', id);
+                }
                 setIsResolving(false);
             } else {
                 setAccountId(null);
