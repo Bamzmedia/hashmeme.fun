@@ -30,7 +30,7 @@ export default function SwapPage() {
         try {
             // Build the execution payload
             const routerId = "0.0.3959082"; // Example Testnet V2 Router
-            const unsignedTx = buildSaucerSwapTx(
+            const unsignedTx = await buildSaucerSwapTx(
                 routerId,
                 "0.0.X_WHBAR",
                 DEMO_TOKEN_ID,

@@ -1,13 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { HashConnect, SessionData, HashConnectConnectionState } from 'hashconnect';
-import { LedgerId } from '@hashgraph/sdk';
 
 interface HashConnectContextType {
-  hashConnect: HashConnect | null;
-  state: HashConnectConnectionState;
-  pairingData: SessionData | null;
+  hashConnect: any | null;
+  state: any;
+  pairingData: any | null;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   accountId: string | null;
@@ -15,7 +13,7 @@ interface HashConnectContextType {
 
 const HashConnectContext = createContext<HashConnectContextType>({
   hashConnect: null,
-  state: HashConnectConnectionState.Disconnected,
+  state: 0, // Default disconnected state
   pairingData: null,
   connect: async () => {},
   disconnect: async () => {},
@@ -23,37 +21,39 @@ const HashConnectContext = createContext<HashConnectContextType>({
 });
 
 export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
-  const [hashConnect, setHashConnect] = useState<HashConnect | null>(null);
-  const [state, setState] = useState<HashConnectConnectionState>(HashConnectConnectionState.Disconnected);
-  const [pairingData, setPairingData] = useState<SessionData | null>(null);
+  const [hashConnect, setHashConnect] = useState<any | null>(null);
+  const [state, setState] = useState<any>(0);
+  const [pairingData, setPairingData] = useState<any | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
 
   useEffect(() => {
-    let hc: HashConnect;
-
     const init = async () => {
       try {
+        // Dynamic imports to prevent SSR build failures
+        const { HashConnect, HashConnectConnectionState } = await import('hashconnect');
+        const { LedgerId } = await import('@hashgraph/sdk');
+
         const appMetadata = {
           name: "HashMeme Platform",
           description: "Premium Meme Launchpad on Hedera",
           icons: ["https://dapp.example.com/logo.png"],
           url: "https://hashmeme.fun"
         };
-        // Use an environment variable for WalletConnect ID, default placeholder if absent
+        
         const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "c1e7a61d8a8b2fc63d3de1e892c90c54";
 
-        hc = new HashConnect(
+        const hc = new HashConnect(
             LedgerId.TESTNET,
             projectId,
             appMetadata,
             true // show debugging
         );
 
-        hc.connectionStatusChangeEvent.on((connectionState) => {
+        hc.connectionStatusChangeEvent.on((connectionState: any) => {
           setState(connectionState);
         });
 
-        hc.pairingEvent.on((data) => {
+        hc.pairingEvent.on((data: any) => {
           setPairingData(data);
           if (data && data.accountIds && data.accountIds.length > 0) {
               setAccountId(data.accountIds[0]);
@@ -80,7 +80,7 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const disconnect = async () => {
-    if (hashConnect && (pairingData as any)?.topic) {
+    if (hashConnect && pairingData?.topic) {
       await hashConnect.disconnect();
       setPairingData(null);
       setAccountId(null);
