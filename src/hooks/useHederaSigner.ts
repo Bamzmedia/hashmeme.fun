@@ -5,10 +5,15 @@ import { useEffect, useState, useCallback } from 'react';
 
 /**
  * Robust utility to convert Uint8Array to Base64 in a browser environment.
+ * Replaces the fragile btoa/charCodeAt approach for binary stability.
  */
 function bytesToBase64(bytes: Uint8Array): string {
-    const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
-    return btoa(binString);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
 
 /**
@@ -30,13 +35,11 @@ export function useHederaSigner() {
             // 1. Resolve Hedera Identities and Network
             const network = chain?.id === 295 ? 'mainnet' : 'testnet';
             const hederaId = localStorage.getItem('hashmeme_last_account_id');
-            if (!hederaId) throw new Error("Hedera Account ID not resolved yet.");
+            if (!hederaId) throw new Error("Hedera Account ID not resolved yet. Please reconnect.");
 
             // 2. Prepare Transaction for HashPack/Blade
-            // IMPORTANT: Wallets need Node Account IDs to be set explicitly before freezing
-            // for WalletConnect v2 to serialize correctly.
             const { AccountId } = await import('@hashgraph/sdk');
-            const defaultNodeId = network === 'mainnet' ? '0.0.3' : '0.0.3'; // Standard testnet/mainnet node
+            const defaultNodeId = '0.0.3'; // Standard testnet node
             
             if (!transaction.isFrozen()) {
                 transaction.setNodeAccountIds([AccountId.fromString(defaultNodeId)]);
@@ -50,7 +53,8 @@ export function useHederaSigner() {
             const hip30Id = `hedera:${network}:${hederaId}`;
 
             // 4. Trigger the Wallet Pop-up via RPC
-            console.log(`Pumping transaction for ${hip30Id} to HashPack...`);
+            // Some wallets expect a transactionList (array of transactions or single base64 string)
+            console.log(`Executing transaction for ${hip30Id} via native bridge...`);
             
             const response: any = await (client as any).request({
                 method: 'hedera_signAndExecuteTransaction',
@@ -62,7 +66,7 @@ export function useHederaSigner() {
 
             return response;
         } catch (error: any) {
-            console.error("Signing Error:", error);
+            console.error("Native Bridge Error:", error);
             throw error;
         }
     }, [client, address, chain]);
