@@ -27,7 +27,7 @@ export default function WalletConnectButton() {
       onClick={connect}
       className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)]"
     >
-      Connect HashPack
+      Connect Wallet
     </button>
   );
 }

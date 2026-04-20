@@ -168,7 +168,7 @@ export default function SwapPage() {
                         disabled={!hbarAmount || Number(hbarAmount) <= 0 || state !== 'Connected'}
                         className="w-full mt-6 py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 transition-all text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:shadow-[0_0_40px_rgba(99,102,241,0.6)] disabled:opacity-50 disabled:shadow-none disabled:bg-gray-800 disabled:from-gray-800 disabled:to-gray-800 disabled:cursor-not-allowed"
                     >
-                        {state !== 'Connected' ? 'Connect HashPack to Trade' : 'Approve & Swap'}
+                        {state !== 'Connected' ? 'Connect Wallet to Trade' : 'Approve & Swap'}
                     </button>
                 </div>
             </div>
