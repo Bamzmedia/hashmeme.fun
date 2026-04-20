@@ -15,14 +15,9 @@ const nextConfig: NextConfig = {
             zlib: false,
             path: false,
         };
-        
-        // Ensure Webpack can resolve exports from modern ESM packages
-        config.resolve.extensionAlias = {
-          '.js': ['.js', '.ts', '.tsx'],
-        };
     }
     
-    // Some build environments need this to correctly resolve subpath imports in modern ESM packages
+    // Add specific support for 'ox' and other modern ESM packages that use subpath exports
     config.module = {
       ...config.module,
       rules: [
@@ -38,6 +33,8 @@ const nextConfig: NextConfig = {
 
     return config;
   },
+  // Ensure transpile for modern ESM packages that might use problematic syntax for some environments
+  transpilePackages: ['ox', 'wagmi', 'viem', '@reown/appkit', '@reown/appkit-adapter-wagmi'],
 };
 
 export default nextConfig;
