@@ -2,6 +2,7 @@ import WalletConnectButton from '@/components/WalletConnectButton';
 import Link from 'next/link';
 import TrendingGallery from '@/components/TrendingGallery';
 import TradeFeed from '@/components/TradeFeed';
+import CommunityChat from '@/components/CommunityChat';
 
 export default function Home() {
   return (
@@ -77,31 +78,8 @@ export default function Home() {
                 <TradeFeed />
             </div>
 
-            {/* LIVE CHAT PLACEHOLDER */}
-            <div className="bg-black/60 border border-white/5 rounded-3xl p-6 backdrop-blur-xl flex flex-col h-[300px]">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Community Chat</h3>
-                    <span className="flex items-center space-x-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span className="text-[10px] text-emerald-500 font-bold">1,204 Online</span>
-                    </span>
-                </div>
-                <div className="flex-grow space-y-4 overflow-hidden opacity-50">
-                    <div className="flex space-x-3 items-start">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex-shrink-0"></div>
-                        <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none text-xs text-gray-400">Yo, Space Doge is actually mooning! 🚀</div>
-                    </div>
-                    <div className="flex space-x-3 items-start">
-                        <div className="w-8 h-8 rounded-lg bg-pink-500/20 border border-pink-500/30 flex-shrink-0"></div>
-                        <div className="bg-white/5 p-3 rounded-2xl rounded-tl-none text-xs text-gray-400">Just bridged more HBAR, lets gooo</div>
-                    </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-white/5">
-                    <div className="w-full bg-white/5 rounded-xl px-4 py-3 text-xs text-gray-600 font-bold border border-white/5">
-                        Type to chat...
-                    </div>
-                </div>
-            </div>
+            {/* REAL-TIME COMMUNITY CHAT (NEW) */}
+            <CommunityChat />
         </aside>
       </div>
 
