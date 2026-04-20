@@ -4,8 +4,16 @@ import { useAccount, useConnectorClient } from 'wagmi';
 import { useEffect, useState, useCallback } from 'react';
 
 /**
+ * Robust utility to convert Uint8Array to Base64 in a browser environment.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+    const binString = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+    return btoa(binString);
+}
+
+/**
  * Hook to bridge the Wagmi/AppKit connector to the Hedera WalletConnect v2 RPC protocol.
- * This ensures that wallets like HashPack and Blade correctly pop up for transaction signing.
+ * Optimized for HashPack and Blade browser extensions.
  */
 export function useHederaSigner() {
     const { isConnected, address, chain } = useAccount();
@@ -19,28 +27,30 @@ export function useHederaSigner() {
         if (!client || !address) throw new Error("Wallet not connected");
 
         try {
-            // 1. Prepare Transaction for serialization
-            // Note: Transactions must be frozen and have node account IDs set for WC v2
+            // 1. Resolve Hedera Identities and Network
+            const network = chain?.id === 295 ? 'mainnet' : 'testnet';
+            const hederaId = localStorage.getItem('hashmeme_last_account_id');
+            if (!hederaId) throw new Error("Hedera Account ID not resolved yet.");
+
+            // 2. Prepare Transaction for HashPack/Blade
+            // IMPORTANT: Wallets need Node Account IDs to be set explicitly before freezing
+            // for WalletConnect v2 to serialize correctly.
+            const { AccountId } = await import('@hashgraph/sdk');
+            const defaultNodeId = network === 'mainnet' ? '0.0.3' : '0.0.3'; // Standard testnet/mainnet node
+            
             if (!transaction.isFrozen()) {
+                transaction.setNodeAccountIds([AccountId.fromString(defaultNodeId)]);
                 transaction.freeze();
             }
 
-            // 2. Serialize to Base64 (Standard for hedera_signAndExecuteTransaction)
+            // 3. Serialize to Base64 using robust browser utility
             const txBytes = transaction.toBytes();
-            const txBase64 = Buffer.from(txBytes).toString('base64');
-
-            // 3. Format Account ID for HIP-30 (hedera:<network>:<id>)
-            const network = chain?.id === 295 ? 'mainnet' : 'testnet'; // 295 is Hedera Mainnet, 296 is Testnet
-            
-            // We'll need the 0.0.x ID from the useHederaAccount hook normally, 
-            // but the signer needs it to know who is signing.
-            const hederaId = localStorage.getItem('hashmeme_last_account_id');
-            if (!hederaId) throw new Error("Hedera Account ID not resolved yet. Please wait a moment.");
+            const txBase64 = bytesToBase64(txBytes);
 
             const hip30Id = `hedera:${network}:${hederaId}`;
 
             // 4. Trigger the Wallet Pop-up via RPC
-            console.log("Triggering HashPack/Blade pop-up via hedera_signAndExecuteTransaction...");
+            console.log(`Pumping transaction for ${hip30Id} to HashPack...`);
             
             const response: any = await (client as any).request({
                 method: 'hedera_signAndExecuteTransaction',
@@ -59,7 +69,6 @@ export function useHederaSigner() {
 
     useEffect(() => {
         if (isConnected && client && address) {
-            // Bridge object that components will use
             setSigner({
                 executeTransaction,
                 address
