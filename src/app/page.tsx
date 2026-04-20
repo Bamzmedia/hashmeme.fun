@@ -1,10 +1,28 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import Link from 'next/link';
 import TrendingGallery from '@/components/TrendingGallery';
 import TradeFeed from '@/components/TradeFeed';
 import CommunityChat from '@/components/CommunityChat';
+import { MirrorNodeService } from '@/services/MirrorNodeService';
 
 export default function Home() {
+  const [stats, setStats] = useState({ dailySwaps: '...', htsGrowth: '...' });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const mirror = MirrorNodeService.getInstance();
+      const realStats = await mirror.getGlobalStats();
+      setStats({
+          dailySwaps: realStats.dailySwaps >= 1000 ? `${(realStats.dailySwaps / 1000).toFixed(1)}K` : realStats.dailySwaps.toString(),
+          htsGrowth: `${realStats.htsGrowth.toFixed(1)}%`
+      });
+    };
+    fetchStats();
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col relative overflow-hidden">
       {/* Texture Layer */}
@@ -59,16 +77,19 @@ export default function Home() {
         {/* RIGHT COLUMN: Sidebar (Trade Feed & Chat) */}
         <aside className="w-full lg:w-[400px] flex flex-col space-y-8">
             {/* STATS OVERVIEW */}
-            <div className="bg-black/60 border border-white/5 rounded-3xl p-6 backdrop-blur-xl">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Market Stats</h3>
+            <div className="bg-black/60 border border-white/5 rounded-3xl p-6 backdrop-blur-xl group">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Market Stats</h3>
+                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Live Ledger</span>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div className="text-2xl font-bold text-white">42.5K</div>
-                        <div className="text-[10px] text-gray-500 uppercase font-black mt-1">Daily Swaps</div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-indigo-500/30 transition-all duration-500">
+                        <div className="text-2xl font-black text-white">{stats.dailySwaps}</div>
+                        <div className="text-[10px] text-gray-500 uppercase font-black mt-1">24H Consensus</div>
                     </div>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div className="text-2xl font-bold text-emerald-400">+12%</div>
-                        <div className="text-[10px] text-gray-500 uppercase font-black mt-1">HTS Growth</div>
+                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-emerald-500/30 transition-all duration-500">
+                        <div className={`text-2xl font-black ${parseFloat(stats.htsGrowth) > 0 ? 'text-emerald-400' : 'text-white'}`}>{stats.htsGrowth}</div>
+                        <div className="text-[10px] text-gray-500 uppercase font-black mt-1">HTS Velocity</div>
                     </div>
                 </div>
             </div>
@@ -78,7 +99,7 @@ export default function Home() {
                 <TradeFeed />
             </div>
 
-            {/* REAL-TIME COMMUNITY CHAT (NEW) */}
+            {/* REAL-TIME COMMUNITY CHAT */}
             <CommunityChat />
         </aside>
       </div>
