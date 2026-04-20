@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useHashConnect } from '@/context/HashConnectProvider';
+import { useHederaAccount } from '@/hooks/useHederaAccount';
 import WalletConnectButton from '@/components/WalletConnectButton';
 
 export default function StakePage() {
-    const { accountId, state } = useHashConnect();
+    const { accountId, isConnected } = useHederaAccount();
     const [stakeAmount, setStakeAmount] = useState<string>('');
     const [stakedBalance, setStakedBalance] = useState<string>('0');
     const [pendingRewards, setPendingRewards] = useState<string>('0.00');
@@ -22,7 +22,7 @@ export default function StakePage() {
     }, [stakedBalance]);
 
     const handleStake = async () => {
-        if (!accountId) return;
+        if (!isConnected) return;
         setStatus('Approving token transfer to Staking pool...');
         await new Promise(r => setTimeout(r, 1500));
         setStakedBalance(prev => (Number(prev) + Number(stakeAmount)).toString());
@@ -86,14 +86,14 @@ export default function StakePage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                             <button 
                                 onClick={handleStake}
-                                disabled={!stakeAmount || Number(stakeAmount) <= 0 || state !== 'Connected'}
+                                disabled={!stakeAmount || Number(stakeAmount) <= 0 || !isConnected}
                                 className="w-full py-4 rounded-xl font-bold text-lg bg-emerald-600 hover:bg-emerald-500 transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Deposit
                             </button>
                             <button 
                                 onClick={handleUnstake}
-                                disabled={Number(stakedBalance) <= 0 || state !== 'Connected'}
+                                disabled={Number(stakedBalance) <= 0 || !isConnected}
                                 className="w-full py-4 rounded-xl font-bold text-lg bg-gray-800 hover:bg-gray-700 transition-colors text-white border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Withdraw
@@ -102,7 +102,7 @@ export default function StakePage() {
 
                         <button 
                             onClick={handleClaim}
-                            disabled={Number(pendingRewards) <= 0 || state !== 'Connected'}
+                            disabled={Number(pendingRewards) <= 0 || !isConnected}
                             className="w-full mt-4 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 transition-all text-white shadow-[0_0_20px_rgba(52,211,153,0.3)] disabled:opacity-50 disabled:shadow-none"
                         >
                             Claim HBAR Rewards

@@ -1,31 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { useHashConnect } from '@/context/HashConnectProvider';
+import { useHederaAccount } from '@/hooks/useHederaAccount';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import { useSaucerSwapQuote } from '@/hooks/useSaucerSwapQuote';
 import { buildSaucerSwapTx } from '@/utils/swapTransaction';
 
 export default function SwapPage() {
-    const { accountId, state, hashConnect, pairingData } = useHashConnect();
+    const { accountId, isConnected } = useHederaAccount();
     const [hbarAmount, setHbarAmount] = useState<string>('');
     const [slippage, setSlippage] = useState<number>(5.0); // 5% default for volatile meme coins
     const [showSettings, setShowSettings] = useState<boolean>(false);
     const [status, setStatus] = useState<string>('');
 
-    // Mock token for demo: In reality, users could select a token from a curated list of launched tokens
+    // Mock token for demo
     const DEMO_TOKEN_ID = "0.0.1234567";
     
     // Fetch live quote leveraging our custom V2 AMM hook
     const { expectedOutput, minimumOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", DEMO_TOKEN_ID);
 
     const executeSwap = async () => {
-        if (!hashConnect || !(pairingData as any)?.topic) {
-            setStatus("Please connect your HashPack wallet to proceed.");
+        if (!isConnected || !accountId) {
+            setStatus("Please connect your wallet to proceed.");
             return;
         }
 
-        setStatus("Please approve the SaucerSwap Router transaction in HashPack...");
+        setStatus("Please approve the SaucerSwap Router transaction in your wallet...");
 
         try {
             // Build the execution payload
@@ -37,14 +37,9 @@ export default function SwapPage() {
                 3000, 
                 Number(hbarAmount),
                 Number(minimumOutput),
-                accountId!
+                accountId
             );
 
-            // In production:
-            // const provider = hashConnect.getProvider("testnet", pairingData.topic, accountId!);
-            // const signer = hashConnect.getSigner(provider);
-            // await unsignedTx.executeWithSigner(signer);
-            
             // Simulation environment resolution:
             await new Promise(r => setTimeout(r, 2000));
             setStatus(`Swap Successful! Your wallet received exactly ${expectedOutput} Memes! (Development Mode)`);
@@ -57,7 +52,6 @@ export default function SwapPage() {
 
     return (
         <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-20 px-4 relative overflow-hidden">
-            {/* Background Atmosphere */}
             <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-pink-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
@@ -67,9 +61,7 @@ export default function SwapPage() {
                     <WalletConnectButton />
                 </div>
 
-                {/* Main Card */}
                 <div className="bg-black/60 border border-white/10 p-6 rounded-[2rem] backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
-                    
                     <div className="flex justify-between items-center mb-6">
                         <span className="text-sm text-gray-400 font-medium tracking-wide">Swap instantly on SaucerSwap V2</span>
                         <button onClick={() => setShowSettings(!showSettings)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 transition-colors group">
@@ -101,7 +93,6 @@ export default function SwapPage() {
                         </div>
                     )}
 
-                    {/* From Input Box */}
                     <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mb-1 focus-within:border-indigo-500/40 focus-within:bg-indigo-500/5 transition-all group">
                         <div className="flex justify-between mb-3">
                             <label className="text-sm font-medium text-gray-400">You Pay</label>
@@ -121,14 +112,12 @@ export default function SwapPage() {
                         </div>
                     </div>
 
-                    {/* Bridge Icon */}
                     <div className="flex justify-center -my-4 z-20 relative">
                         <div className="bg-gray-900 border-[6px] border-[#0a0a0a] p-2.5 rounded-2xl text-gray-400 hover:text-white hover:bg-indigo-600/20 cursor-pointer transition-all">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                         </div>
                     </div>
 
-                    {/* To Input Box */}
                     <div className="bg-black/40 rounded-3xl p-5 border border-white/5 mt-1 focus-within:bg-white/5 transition-all">
                         <div className="flex justify-between mb-3">
                             <label className="text-sm font-medium text-gray-400">You Receive</label>
@@ -165,10 +154,10 @@ export default function SwapPage() {
 
                     <button 
                         onClick={executeSwap}
-                        disabled={!hbarAmount || Number(hbarAmount) <= 0 || state !== 'Connected'}
+                        disabled={!hbarAmount || Number(hbarAmount) <= 0 || !isConnected}
                         className="w-full mt-6 py-5 rounded-2xl font-bold text-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 transition-all text-white shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:shadow-[0_0_40px_rgba(99,102,241,0.6)] disabled:opacity-50 disabled:shadow-none disabled:bg-gray-800 disabled:from-gray-800 disabled:to-gray-800 disabled:cursor-not-allowed"
                     >
-                        {state !== 'Connected' ? 'Connect Wallet to Trade' : 'Approve & Swap'}
+                        {!isConnected ? 'Connect Wallet to Trade' : 'Approve & Swap'}
                     </button>
                 </div>
             </div>

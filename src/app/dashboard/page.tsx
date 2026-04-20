@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useHashConnect } from '@/context/HashConnectProvider';
+import { useHederaAccount } from '@/hooks/useHederaAccount';
 import WalletConnectButton from '@/components/WalletConnectButton';
 
 export default function DashboardPage() {
-  const { accountId, state } = useHashConnect();
+  const { accountId, isConnected } = useHederaAccount();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -20,8 +20,8 @@ export default function DashboardPage() {
 
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (state !== 'Connected') {
-        setStatus("Please connect your wallet first via HashPack!");
+    if (!isConnected) {
+        setStatus("Please connect your wallet first!");
         return;
     }
     if (!imageFile) {
@@ -77,7 +77,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-20 px-4 relative overflow-hidden">
-      {/* Background Decor */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-500/10 blur-[150px] rounded-full pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
@@ -180,10 +179,10 @@ export default function DashboardPage() {
 
                     <button 
                         type="submit"
-                        disabled={loading || state !== 'Connected'}
+                        disabled={loading || !isConnected}
                         className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 transition-all text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     >
-                        {loading ? 'Processing...' : (state !== 'Connected' ? 'Connect Wallet First' : 'Launch HTS Token')}
+                        {loading ? 'Processing...' : (!isConnected ? 'Connect Wallet First' : 'Launch HTS Token')}
                     </button>
                 </form>
             )}
