@@ -84,16 +84,21 @@ export default function Home() {
                             <WalletConnectButton />
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl px-6">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-4xl px-6">
                             <button 
                                 onClick={scrollToMarket}
-                                className="w-full px-16 py-6 border border-blue-500/50 text-white font-black text-[10px] uppercase tracking-[0.4em] hover:bg-blue-500 hover:border-blue-500 transition-all shadow-radiant bg-blue-500/10 active:scale-95"
+                                className="w-full px-12 py-6 border border-blue-500/50 text-white font-black text-[10px] uppercase tracking-[0.4em] hover:bg-blue-500 hover:border-blue-500 transition-all shadow-radiant bg-blue-500/10 active:scale-95"
                             >
                                 Explore Radiant Market
                             </button>
                             <Link href="/dashboard" className="w-full">
-                                <button className="w-full px-16 py-6 border border-white/10 text-white/30 font-black text-[10px] uppercase tracking-[0.4em] hover:border-purple-500/50 hover:text-purple-400 transition-all hover:bg-purple-500/5 active:scale-95">
+                                <button className="w-full px-12 py-6 border border-white/10 text-white/30 font-black text-[10px] uppercase tracking-[0.4em] hover:border-purple-500/50 hover:text-purple-400 transition-all hover:bg-purple-500/5 active:scale-95">
                                     Launch New Asset
+                                </button>
+                            </Link>
+                            <Link href="/leaderboard" className="w-full">
+                                <button className="w-full px-12 py-6 border border-blue-500/20 text-blue-400 font-black text-[10px] uppercase tracking-[0.4em] hover:border-blue-500 hover:bg-blue-500/5 transition-all shadow-radiant active:scale-95">
+                                    View Leaderboard
                                 </button>
                             </Link>
                         </div>
