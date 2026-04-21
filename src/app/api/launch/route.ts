@@ -46,7 +46,9 @@ export async function POST(req: Request) {
             market_cap: "0",
             hbar_collected: "0",
             created_at: new Date().toISOString(),
-            creator: creatorAccountId
+            creator: creatorAccountId,
+            is_locked: body.isSupplyLocked || false,
+            reactions: { fire: 0, rocket: 0 }
         };
 
         // 2. Read current registry

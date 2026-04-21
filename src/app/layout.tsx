@@ -28,9 +28,42 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-[#05070a]">
         <AppKitProvider>
-          {children}
+          <div className="flex-grow">
+            {children}
+          </div>
+          
+          {/* HIGH-FIDELITY PROTOCOL FOOTER */}
+          <footer className="z-10 py-12 px-6 border-t border-white/5 bg-[#05070a]/50 backdrop-blur-xl">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-8 md:space-y-0">
+                <div className="flex items-center space-x-4">
+                    <div className="w-8 h-8 border border-blue-500/40 rotate-45 flex items-center justify-center">
+                        <div className="w-4 h-4 bg-blue-500"></div>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">HashMeme Protocol</span>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-10">
+                    <div className="space-y-3">
+                        <div className="text-[8px] font-bold text-blue-500 uppercase tracking-widest">Logic: Verified</div>
+                        <a href="https://hashscan.io/testnet/contract/0.0.3959082" target="_blank" className="block text-[10px] font-black text-white/30 hover:text-white transition-colors uppercase tracking-[0.2em]">Swap Router (v2)</a>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="text-[8px] font-bold text-blue-500 uppercase tracking-widest">Consensus: Live</div>
+                        <a href="https://hashscan.io/testnet/topic/0.0.5241085" target="_blank" className="block text-[10px] font-black text-white/30 hover:text-white transition-colors uppercase tracking-[0.2em]">Platform HCS Topic</a>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="text-[8px] font-bold text-blue-500 uppercase tracking-widest">Registry: Public</div>
+                        <a href="https://github.com/Bamzmedia/hashmeme.fun" target="_blank" className="block text-[10px] font-black text-white/30 hover:text-white transition-colors uppercase tracking-[0.2em]">Open Source Code</a>
+                    </div>
+                </div>
+
+                <div className="text-[9px] font-bold text-white/10 uppercase tracking-[0.3em]">
+                    Build v2.4 Alpha
+                </div>
+            </div>
+          </footer>
         </AppKitProvider>
       </body>
     </html>
