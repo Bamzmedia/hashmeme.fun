@@ -90,7 +90,8 @@ export default function DashboardPage() {
         setStatus('');
         triggerSuccessConfetti();
     } catch (error: any) {
-        setStatus(error.message || "An error occurred.");
+        console.error("Genesis Launch Failed:", error);
+        setStatus(`Launch Error: ${error.message || "Ledger Handshake Aborted"}`);
     } finally {
         setLoading(false);
     }
@@ -239,8 +240,8 @@ export default function DashboardPage() {
                                 <div className="text-[8px] font-bold text-white/10 uppercase tracking-widest">v3.0.0 Stable</div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Identifier</label><input required value={formData.name} onChange={(e) => {setFormData({...formData, name: e.target.value}); setStep(2);}} className="w-full bg-white/5 border border-white/5 px-8 py-6 text-white text-sm outline-none focus:border-blue-500 transition-all font-bold rounded-[1.5rem] placeholder:text-white/5" placeholder="E.G. RADIANT CORE" /></div>
-                                <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Ticker</label><input required value={formData.symbol} onChange={(e) => {setFormData({...formData, symbol: e.target.value}); setStep(2);}} className="w-full bg-white/5 border border-white/5 px-8 py-6 text-white text-sm outline-none focus:border-blue-500 transition-all font-bold rounded-[1.5rem] placeholder:text-white/5" placeholder="RAD" /></div>
+                                <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Identifier</label><input required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-white/5 border border-white/5 px-8 py-6 text-white text-sm outline-none focus:border-blue-500 transition-all font-bold rounded-[1.5rem] placeholder:text-white/5" placeholder="E.G. RADIANT CORE" /></div>
+                                <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Ticker</label><input required value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} className="w-full bg-white/5 border border-white/5 px-8 py-6 text-white text-sm outline-none focus:border-blue-500 transition-all font-bold rounded-[1.5rem] placeholder:text-white/5" placeholder="RAD" /></div>
                                 <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Total Integrity</label><input required type="number" value={formData.initialSupply} onChange={(e) => setFormData({...formData, initialSupply: e.target.value})} className="w-full bg-white/5 border border-white/5 px-8 py-6 text-white text-sm outline-none focus:border-blue-500 transition-all font-bold rounded-[1.5rem]" /></div>
                                 <div className="space-y-4"><label className="text-[9px] font-black uppercase text-white/30 tracking-widest ml-4">Supply Logic</label><div className="flex items-center justify-between bg-white/5 border border-white/5 px-8 py-6 rounded-[1.5rem]"><span className={formData.isSupplyLocked ? 'text-blue-500 text-xs font-black' : 'text-white/10 text-xs font-black'}>{formData.isSupplyLocked ? 'IMMUTABLE' : 'OPEN'}</span><input type="checkbox" checked={formData.isSupplyLocked} onChange={(e) => setFormData({...formData, isSupplyLocked: e.target.checked})} className="accent-blue-500 w-5 h-5 shadow-radiant" /></div></div>
                             </div>

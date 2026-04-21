@@ -54,7 +54,6 @@ export function useHederaSigner() {
             const hip30Id = `hedera:${network}:${hederaId}`;
 
             // 4. Trigger the Wallet Pop-up via RPC
-            // Some wallets expect a transactionList (array of transactions or single base64 string)
             console.log(`Executing transaction for ${hip30Id} via native bridge...`);
             
             try {
