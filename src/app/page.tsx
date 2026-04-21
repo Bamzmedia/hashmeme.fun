@@ -37,27 +37,30 @@ export default function Home() {
                   Hash Mapped Ledger Launchpad
               </div>
               
-              <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter leading-none">
+              <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-none">
                   HASHMEME.FUN
               </h1>
 
-              <p className="text-sm md:text-lg text-white/50 max-w-xl mx-auto font-medium tracking-tight">
-                  A high-fidelity infrastructure for launching and trading 
-                  verified assets on the Hedera network.
+              <p className="text-xs md:text-base text-white/40 max-w-xl mx-auto font-medium tracking-widest uppercase">
+                  Verified Ledger Infrastructure
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-                  <button 
-                      onClick={scrollToMarket}
-                      className="w-full sm:w-auto px-12 py-5 border-2 border-white text-white font-bold text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all"
-                  >
-                      Explore Market
-                  </button>
-                  <Link href="/dashboard" className="w-full sm:w-auto">
-                      <button className="w-full sm:w-auto px-12 py-5 border border-white/20 text-white/60 font-bold text-xs uppercase tracking-[0.3em] hover:border-white hover:text-white transition-all">
-                          Create Asset
+              <div className="flex flex-col items-center justify-center pt-8 gap-10">
+                  <WalletConnectButton />
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <button 
+                          onClick={scrollToMarket}
+                          className="w-full sm:w-auto px-12 py-5 border-2 border-white text-white font-bold text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all"
+                      >
+                          Explore Market
                       </button>
-                  </Link>
+                      <Link href="/dashboard" className="w-full sm:w-auto">
+                          <button className="w-full sm:w-auto px-12 py-5 border border-white/20 text-white/60 font-bold text-xs uppercase tracking-[0.3em] hover:border-white hover:text-white transition-all">
+                              Create Asset
+                          </button>
+                      </Link>
+                  </div>
               </div>
           </div>
           
