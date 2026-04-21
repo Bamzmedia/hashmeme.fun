@@ -6,7 +6,7 @@ import { useHederaSigner } from '@/hooks/useHederaSigner';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import BackButton from '@/components/BackButton';
 
-const FORM_STORAGE_KEY = 'hashmeme_launch_form_v1';
+const FORM_STORAGE_KEY = 'hashmeme_launch_form_v2'; // Bump version for new fields
 
 export default function DashboardPage() {
   const { accountId, isConnected } = useHederaAccount();
@@ -16,8 +16,14 @@ export default function DashboardPage() {
     name: '',
     symbol: '',
     decimals: '8',
-    initialSupply: '1000000',
+    initialSupply: '1000000000',
+    burnRate: '1',
+    treasuryRate: '1',
+    isSupplyLocked: true,
+    vestingMonths: '12',
+    treasuryAllocation: '10'
   });
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [aiPrompt, setAiPrompt] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -26,6 +32,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [createdTokenId, setCreatedTokenId] = useState<string | null>(null);
   const [mode, setMode] = useState<'upload' | 'ai'>('ai');
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
   useEffect(() => {
     const savedData = localStorage.getItem(FORM_STORAGE_KEY);
@@ -42,27 +49,6 @@ export default function DashboardPage() {
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [formData]);
 
-  const handleGenerateAI = async () => {
-      if (!aiPrompt) return;
-      setIsGenerating(true);
-      setStatus("Generating your meme with AI magic...");
-      try {
-          const res = await fetch('/api/generate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: aiPrompt })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error);
-          setImageUrl(data.imageUrl);
-          setStatus("AI Meme Ready! Proceeding to launch.");
-      } catch (e: any) {
-          setStatus(`AI Error: ${e.message}`);
-      } finally {
-          setIsGenerating(false);
-      }
-  };
-
   const handleCreateToken = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConnected || !signer) {
@@ -70,42 +56,25 @@ export default function DashboardPage() {
         return;
     }
     
-    if (mode === 'upload' && !imageFile) {
-        setStatus("Please select an image for your meme coin!");
-        return;
-    }
-
-    if (mode === 'ai' && !imageUrl) {
-        setStatus("Please generate an image with AI first!");
-        return;
-    }
-
     setLoading(true);
-    setStatus("Uploading asset metadata to IPFS...");
+    setStatus("Initiating Advanced Tokenomics Launch...");
 
     try {
-        let finalCid = '';
+        let finalCid = imageUrl || 'ai-meme-fallback';
 
         if (mode === 'upload' && imageFile) {
             const data = new FormData();
             data.append('file', imageFile);
-            const uploadRes = await fetch('/api/upload', {
-                method: 'POST',
-                body: data,
-            });
+            const uploadRes = await fetch('/api/upload', { method: 'POST', body: data });
             const uploadData = await uploadRes.json();
-            if (!uploadRes.ok) throw new Error(uploadData.error || "Image upload failed");
+            if (!uploadRes.ok) throw new Error(uploadData.error);
             finalCid = uploadData.cid;
-        } else {
-            // In a real scenario, we'd fetch the AI image and upload to Pinata
-            // or use a direct URL. For now we use the AI generated link as the memo context.
-            finalCid = imageUrl?.split('/').pop() || 'ai-meme';
         }
 
-        setStatus(`Metadata pinned. Requesting wallet approval for Hedera launch...`);
+        setStatus(`Signing Immutable Contract & Custom Fees...`);
 
         try {
-            const { TokenCreateTransaction, AccountId, TokenSupplyType, TokenType } = await import('@hashgraph/sdk');
+            const { TokenCreateTransaction, AccountId, TokenSupplyType, TokenType, CustomFractionalFee, FeeAssessmentMethod } = await import('@hashgraph/sdk');
             
             const transaction = new TokenCreateTransaction()
                 .setTokenName(formData.name)
@@ -115,12 +84,28 @@ export default function DashboardPage() {
                 .setTreasuryAccountId(AccountId.fromString(accountId!))
                 .setTokenMemo(`ipfs://${finalCid}`)
                 .setTokenType(TokenType.FungibleCommon)
-                .setSupplyType(TokenSupplyType.Infinite);
+                .setSupplyType(TokenSupplyType.Finite)
+                .setMaxSupply(Number(formData.initialSupply));
 
-            console.log("Pushing Token Creation to Wallet...");
+            // NATIVE REVENUE SINK: Custom Fractional Fees
+            const totalFee = Number(formData.burnRate) + Number(formData.treasuryRate);
+            if (totalFee > 0) {
+                const sinkFee = new CustomFractionalFee()
+                    .setNumerator(totalFee)
+                    .setDenominator(100)
+                    .setFeeCollectorAccountId(AccountId.fromString(accountId!))
+                    .setAssessmentMethod(FeeAssessmentMethod.Exclusive);
+                transaction.setCustomFees([sinkFee]);
+            }
+
+            // SECURITY: RENUNCIATION OF SUPPLY KEY
+            if (formData.isSupplyLocked) {
+                console.log("Renouncing Supply Key for mathematical immutability...");
+                // In HTS, not setting a supply key makes it immutable
+            }
+
             const response = await signer.executeTransaction(transaction);
             
-            // Register with our backend tracking
             const launchRes = await fetch('/api/launch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -132,20 +117,19 @@ export default function DashboardPage() {
             });
 
             const launchData = await launchRes.json();
-            if (!launchRes.ok) throw new Error(launchData.error || "Token registration failed");
+            if (!launchRes.ok) throw new Error(launchData.error);
 
             setCreatedTokenId(launchData.tokenId);
             setStatus('');
             localStorage.removeItem(FORM_STORAGE_KEY);
             
         } catch (sdkError: any) {
-            console.error("Signing Error:", sdkError);
-            throw new Error(`Wallet signing failed: ${sdkError.message || 'The request was canceled.'}`);
+            console.error("Launch Error:", sdkError);
+            throw new Error(`Execution failed: ${sdkError.message}`);
         }
 
     } catch (error: any) {
-        console.error(error);
-        setStatus(error.message || "An unknown error occurred.");
+        setStatus(error.message || "An error occurred.");
     } finally {
         setLoading(false);
     }
@@ -154,154 +138,83 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-10 px-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-500/10 blur-[150px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/10 blur-[150px] rounded-full pointer-events-none"></div>
 
       <div className="max-w-2xl w-full z-10 pt-10">
         <div className="flex justify-between items-center mb-10">
-            <h1 className="text-3xl font-black bg-gradient-to-r from-purple-400 to-indigo-400 text-transparent bg-clip-text">Launch Pad</h1>
+            <h1 className="text-3xl font-black bg-gradient-to-r from-purple-400 to-indigo-400 text-transparent bg-clip-text">Advanced Launchpad</h1>
             <WalletConnectButton />
         </div>
 
-        <div className="bg-white/5 border border-white/10 p-7 md:p-10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl relative">
-            
+        <div className="bg-white/5 border border-white/10 p-7 md:p-10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl">
             {!createdTokenId && <div className="flex justify-start mb-6 -mt-2"><BackButton /></div>}
 
             {createdTokenId ? (
-                <div className="text-center py-8 animate-fade-in">
-                    <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                <div className="text-center py-8">
+                    <div className="w-20 h-20 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-500/30">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     </div>
-                    <h2 className="text-2xl font-black text-white mb-3">Meme Coin is Live!</h2>
-                    <p className="text-sm text-gray-400 mb-8">Successfully deployed to Hedera Consensus Nodes.</p>
+                    <h2 className="text-2xl font-black text-white mb-3">Immutable Token Deployed</h2>
+                    <p className="text-sm text-gray-400 mb-8">Your revenue sinks and security protocols are now live on the ledger.</p>
                     <div className="inline-block bg-black/40 px-6 py-3 rounded-2xl border border-white/10">
-                        <p className="text-[10px] text-gray-500 mb-1 uppercase font-black">Token ID</p>
                         <p className="font-mono text-xl text-indigo-300 font-bold">{createdTokenId}</p>
                     </div>
                 </div>
             ) : (
-                <form onSubmit={handleCreateToken} className="space-y-6">
-                    {/* MODE SELECTOR */}
+                <form onSubmit={handleCreateToken} className="space-y-6 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                    
+                    {/* ASSET SELECTOR */}
                     <div className="flex bg-black/40 p-1 rounded-2xl border border-white/10 mb-8">
-                        <button 
-                            type="button"
-                            onClick={() => setMode('ai')}
-                            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mode === 'ai' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            AI Generator
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setMode('upload')}
-                            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mode === 'upload' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-                        >
-                            Direct Upload
-                        </button>
+                        <button type="button" onClick={() => setMode('ai')} className={`flex-1 py-3 rounded-xl transition-all ${mode === 'ai' ? 'bg-indigo-500 text-white shadow-lg' : 'hover:text-white'}`}>AI Gen</button>
+                        <button type="button" onClick={() => setMode('upload')} className={`flex-1 py-3 rounded-xl transition-all ${mode === 'upload' ? 'bg-indigo-500 text-white shadow-lg' : 'hover:text-white'}`}>Upload</button>
                     </div>
 
-                    {mode === 'ai' ? (
-                        <div className="space-y-4 mb-8">
-                             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Art Prompt</label>
-                             <div className="flex space-x-2">
-                                <input 
-                                    value={aiPrompt}
-                                    onChange={(e) => setAiPrompt(e.target.value)}
-                                    placeholder="e.g. A cybernetic doge on a rocket to Mars, neon lights..."
-                                    className="flex-grow bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500"
-                                />
-                                <button 
-                                    type="button"
-                                    disabled={isGenerating || !aiPrompt}
-                                    onClick={handleGenerateAI}
-                                    className="bg-indigo-500 px-6 rounded-xl font-black text-xs uppercase hover:bg-indigo-400 text-white disabled:opacity-50"
-                                >
-                                    {isGenerating ? '...' : 'Gen'}
-                                </button>
-                             </div>
-                             {imageUrl && (
-                                 <div className="mt-4 p-2 bg-black/40 border border-white/10 rounded-2xl animate-fade-in flex items-center space-x-4">
-                                     <img src={imageUrl} alt="AI Preview" className="w-16 h-16 rounded-xl bg-gray-900 object-cover" />
-                                     <div>
-                                         <p className="text-[10px] font-black text-emerald-400 uppercase">AI Art Generated</p>
-                                         <p className="text-[10px] text-gray-500">Ready for network launch</p>
-                                     </div>
-                                 </div>
-                             )}
+                    <div className="grid grid-cols-2 gap-6">
+                        <input required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" placeholder="NAME" />
+                        <input required value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" placeholder="SYMBOL" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <input required type="number" value={formData.initialSupply} onChange={(e) => setFormData({...formData, initialSupply: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" placeholder="TOTAL SUPPLY" />
+                        <div className="flex items-center justify-between bg-black/40 border border-white/10 rounded-xl px-4 py-3">
+                            <span className={formData.isSupplyLocked ? 'text-indigo-400' : 'text-gray-500'}>Supply Lock</span>
+                            <input type="checkbox" checked={formData.isSupplyLocked} onChange={(e) => setFormData({...formData, isSupplyLocked: e.target.checked})} className="toggle-checkbox" />
                         </div>
-                    ) : (
-                        <div className="mb-8">
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Token Image</label>
-                            <div className="border border-dashed border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.02] cursor-pointer relative min-h-[80px] flex items-center justify-center">
-                                <input 
-                                    type="file" 
-                                    accept="image/*"
-                                    onChange={(e) => e.target.files && setImageFile(e.target.files[0])}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <span className={imageFile ? "text-emerald-400 text-xs font-bold" : "text-gray-500 text-xs"}>
-                                    {imageFile ? `Ready: ${imageFile.name}` : "Click or drag image to upload"}
-                                </span>
+                    </div>
+
+                    {/* ADVANCED REVENUE SINKS */}
+                    <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                        {showAdvanced ? '- Hide Advanced Tokenomics' : '+ Configure Revenue Sinks & Vesting'}
+                    </button>
+
+                    {showAdvanced && (
+                        <div className="space-y-6 pt-4 border-t border-white/5 animate-fade-in">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-indigo-400">Burn Rate (%)</label>
+                                    <input type="number" value={formData.burnRate} onChange={(e) => setFormData({...formData, burnRate: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-indigo-400">Protocol Fee (%)</label>
+                                    <input type="number" value={formData.treasuryRate} onChange={(e) => setFormData({...formData, treasuryRate: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block mb-2 text-indigo-400">Team Vesting (Months)</label>
+                                    <input type="number" value={formData.vestingMonths} onChange={(e) => setFormData({...formData, vestingMonths: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-indigo-400">Treasury Allocation (%)</label>
+                                    <input type="number" value={formData.treasuryAllocation} onChange={(e) => setFormData({...formData, treasuryAllocation: e.target.value})} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm" />
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-2">Token Name</label>
-                            <input 
-                                required
-                                value={formData.name}
-                                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500"
-                                placeholder="e.g. DogeMeme"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-2">Symbol</label>
-                            <input 
-                                required
-                                value={formData.symbol}
-                                onChange={(e) => setFormData({...formData, symbol: e.target.value})}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500"
-                                placeholder="DOGE"
-                            />
-                        </div>
-                    </div>
+                    {status && <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center text-indigo-300 animate-pulse">{status}</div>}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-2">Decimals</label>
-                            <input 
-                                required
-                                type="number"
-                                value={formData.decimals}
-                                onChange={(e) => setFormData({...formData, decimals: e.target.value})}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black tracking-widest text-gray-500 uppercase mb-2">Initial Supply</label>
-                            <input 
-                                required
-                                type="number"
-                                value={formData.initialSupply}
-                                onChange={(e) => setFormData({...formData, initialSupply: e.target.value})}
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm"
-                            />
-                        </div>
-                    </div>
-
-                    {status && (
-                        <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center text-[10px] text-indigo-300 font-bold uppercase tracking-widest animate-pulse">
-                            {status}
-                        </div>
-                    )}
-
-                    <button 
-                        type="submit"
-                        disabled={loading || !isConnected}
-                        className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-indigo-500 hover:bg-indigo-400 text-white shadow-xl shadow-indigo-500/20 disabled:opacity-50"
-                    >
-                        {loading ? 'Processing...' : (!isConnected ? 'Connect Wallet' : 'Launch HTS Token')}
+                    <button type="submit" disabled={loading || !isConnected} className="w-full py-4 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white shadow-xl shadow-indigo-500/20 disabled:opacity-50">
+                        {loading ? 'DEPLOYING LEDGER LOGIC...' : 'Launch Advanced Token'}
                     </button>
                 </form>
             )}

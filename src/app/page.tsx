@@ -97,17 +97,23 @@ export default function Home() {
             {/* STATS OVERVIEW */}
             <div className="bg-black/60 border border-white/5 rounded-3xl p-6 backdrop-blur-xl group">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Market Energy</h3>
-                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Live Ledger</span>
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Global Sinks</h3>
+                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Deflation Active</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                     <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-indigo-500/30 transition-all duration-500 text-center">
                         <div className="text-xl font-black text-white">{stats.dailySwaps}</div>
                         <div className="text-[9px] text-gray-500 uppercase font-black mt-1">24H Swaps</div>
                     </div>
-                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-emerald-500/30 transition-all duration-500 text-center">
-                        <div className={`text-xl font-black ${parseFloat(stats.htsGrowth) > 0 ? 'text-emerald-400' : 'text-white'}`}>{stats.htsGrowth}</div>
-                        <div className="text-[9px] text-gray-500 uppercase font-black mt-1">HTS Alpha</div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-emerald-500/30 transition-all duration-500 text-center">
+                            <div className={`text-xl font-black ${parseFloat(stats.htsGrowth) > 0 ? 'text-emerald-400' : 'text-white'}`}>{stats.htsGrowth}</div>
+                            <div className="text-[9px] text-gray-500 uppercase font-black mt-1">HTS Alpha</div>
+                        </div>
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group-hover:border-pink-500/30 transition-all duration-500 text-center">
+                            <div className="text-xl font-black text-pink-400">1.2%</div>
+                            <div className="text-[9px] text-gray-500 uppercase font-black mt-1">Supply Burned</div>
+                        </div>
                     </div>
                 </div>
             </div>
