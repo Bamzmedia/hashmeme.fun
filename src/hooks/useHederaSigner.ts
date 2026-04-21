@@ -38,10 +38,11 @@ export function useHederaSigner() {
             if (!hederaId) throw new Error("Hedera Account ID not resolved yet. Please reconnect.");
 
             // 2. Prepare Transaction for HashPack/Blade
-            const { AccountId } = await import('@hashgraph/sdk');
+            const { AccountId, TransactionId } = await import('@hashgraph/sdk');
             const defaultNodeId = '0.0.3'; // Standard testnet node
             
             if (!transaction.isFrozen()) {
+                transaction.setTransactionId(TransactionId.generate(AccountId.fromString(hederaId)));
                 transaction.setNodeAccountIds([AccountId.fromString(defaultNodeId)]);
                 transaction.freeze();
             }
