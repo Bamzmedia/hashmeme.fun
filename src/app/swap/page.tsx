@@ -11,22 +11,57 @@ import BackgroundMesh from '@/components/effects/BackgroundMesh';
 import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
 import { useSearchParams } from 'next/navigation';
 
+interface TokenMetadata {
+    token_id: string;
+    name: string;
+    symbol: string;
+    image_url: string;
+}
+
 function SwapContent() {
     const { accountId, isConnected } = useHederaAccount();
     const { signer } = useHederaSigner();
     const searchParams = useSearchParams();
     
-    // Dynamic token mapping
-    const [targetTokenId, setTargetTokenId] = useState<string>("0.0.5241088"); // Default to GLOW
+    // State
+    const [targetTokenId, setTargetTokenId] = useState<string>("0.0.5241088"); // Default GLOW
+    const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata | null>(null);
     const [hbarAmount, setHbarAmount] = useState<string>('');
     const [slippage, setSlippage] = useState<number>(1.0); 
     const [showSettings, setShowSettings] = useState<boolean>(false);
     const [status, setStatus] = useState<string>('');
     
-    // Sync with URL parameter
+    // Sync with URL parameter & Fetch Metadata
     useEffect(() => {
-        const id = searchParams.get('id');
-        if (id) setTargetTokenId(id);
+        const id = searchParams.get('id') || "0.0.5241088";
+        setTargetTokenId(id);
+
+        const fetchMeta = async () => {
+            try {
+                const res = await fetch('/api/launch');
+                const data = await res.json();
+                const found = data.tokens.find((t: any) => t.token_id === id);
+                if (found) {
+                    setTokenMetadata({
+                        token_id: found.token_id,
+                        name: found.name,
+                        symbol: found.symbol,
+                        image_url: found.image_url
+                    });
+                } else {
+                    // Fallback to generic if not launched via protocol yet
+                    setTokenMetadata({
+                        token_id: id,
+                        name: "Radiant Asset",
+                        symbol: "TOKEN",
+                        image_url: ""
+                    });
+                }
+            } catch (e) {
+                console.error("Meta fetch failed");
+            }
+        };
+        fetchMeta();
     }, [searchParams]);
 
     const { expectedOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", targetTokenId);
@@ -37,7 +72,7 @@ function SwapContent() {
             return;
         }
 
-        setStatus("Requesting Radiant Approval...");
+        setStatus(`Requesting Radiant Approval for ${tokenMetadata?.symbol || 'token'}...`);
 
         try {
             const { ContractExecuteTransaction, ContractId, Hbar, HbarUnit } = await import('@hashgraph/sdk');
@@ -67,7 +102,7 @@ function SwapContent() {
                 console.warn("HCS Broadcast failed:", hcsErr);
             }
             
-            setStatus(`Successfully swaped ${hbarAmount} HBAR.`);
+            setStatus(`Successfully swaped ${hbarAmount} HBAR for ${tokenMetadata?.symbol}.`);
             setHbarAmount('');
             
         } catch (error: any) {
@@ -81,9 +116,9 @@ function SwapContent() {
 
             <nav className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-black/40 backdrop-blur-md z-50 px-8 flex items-center justify-between">
                 <div className="flex items-center space-x-12">
-                    <Link href="/" className="flex items-center space-x-3 group">
+                    <Link href="/" className="flex items-center space-x-3 group outline-none">
                         <div className="p-1 rounded-sm border border-blue-500 group-hover:rotate-45 transition-transform duration-500 flex items-center justify-center">
-                            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500"></div>
+                            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
                         </div>
                         <span className="text-lg font-black tracking-tighter uppercase glow-text">GlowSwap / HUB</span>
                     </Link>
@@ -112,7 +147,7 @@ function SwapContent() {
                     <div className="flex justify-between items-center mb-10 relative z-10">
                         <div>
                             <h2 className="text-sm font-black uppercase tracking-[0.2em] mb-1 glow-text">Radiant Exchange</h2>
-                            <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">Optimized Hub Router</p>
+                            <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">Deep-Link Optimized</p>
                         </div>
                         <button 
                             onClick={() => setShowSettings(!showSettings)}
@@ -149,7 +184,7 @@ function SwapContent() {
                     <div className="space-y-2 relative z-10">
                         <div className="p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all focus-within:border-blue-500/50">
                             <div className="flex justify-between items-center mb-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                                <span>Source</span>
+                                <span>Sell</span>
                                 <span className="font-mono">Bal: 0.0</span>
                             </div>
                             <div className="flex justify-between items-center">
@@ -160,9 +195,9 @@ function SwapContent() {
                                     onChange={(e) => setHbarAmount(e.target.value)}
                                     className="bg-transparent text-5xl font-black w-full outline-none placeholder:text-white/5 tracking-tighter"
                                 />
-                                <div className="flex items-center space-x-4">
-                                    <button className="text-[10px] font-black text-blue-500 hover:text-blue-400">MAX</button>
-                                    <div className="px-5 py-2 bg-white text-black font-black text-[11px] rounded-lg">HBAR</div>
+                                <div className="flex items-center space-x-2">
+                                    <button className="text-[10px] font-black text-blue-500 hover:text-blue-400 px-2">MAX</button>
+                                    <div className="px-4 py-2 bg-white text-black font-black text-[11px] rounded-lg">HBAR</div>
                                 </div>
                             </div>
                         </div>
@@ -173,9 +208,9 @@ function SwapContent() {
                             </div>
                         </div>
 
-                        <div className="p-6 bg-white/5 border border-white/5 rounded-3xl">
-                            <div className="flex justify-between items-center mb-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                                <span>Estimate</span>
+                        <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl shadow-inner">
+                            <div className="flex justify-between items-center mb-4 text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+                                <span>Buy (Estimated)</span>
                                 {loading && <span className="text-[9px] text-blue-500 font-bold animate-pulse">Computing...</span>}
                             </div>
                             <div className="flex justify-between items-center">
@@ -183,10 +218,14 @@ function SwapContent() {
                                     readOnly
                                     value={expectedOutput}
                                     placeholder="0"
-                                    className="bg-transparent text-5xl font-black w-full outline-none placeholder:text-white/5 tracking-tighter"
+                                    className="bg-transparent text-5xl font-black w-full outline-none placeholder:text-white/5 tracking-tighter text-blue-500 glow-text"
                                 />
-                                <div className="px-5 py-2 border border-white/10 text-white/40 font-black text-[11px] rounded-lg">TOKEN</div>
+                                <div className="flex items-center space-x-3">
+                                    {tokenMetadata?.image_url && <img src={tokenMetadata.image_url} alt="token" className="w-6 h-6 rounded-full border border-blue-500/20" />}
+                                    <div className="px-4 py-2 border border-blue-500/30 text-blue-400 font-black text-[11px] rounded-lg bg-blue-500/5 uppercase tracking-tighter overflow-hidden max-w-[80px]">{tokenMetadata?.symbol || "TOKEN"}</div>
+                                </div>
                             </div>
+                            <div className="mt-3 text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] truncate">{tokenMetadata?.name || "Verified Hub Asset"}</div>
                         </div>
                     </div>
 
@@ -205,8 +244,12 @@ function SwapContent() {
                         disabled={!hbarAmount || Number(hbarAmount) <= 0 || !isConnected}
                         className="w-full mt-10 py-6 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[11px] uppercase tracking-[0.5em] transition-all shadow-radiant active:scale-[0.98] disabled:opacity-30 disabled:grayscale relative z-10 rounded-[1.5rem]"
                     >
-                        {!isConnected ? 'Initialize Radiant Identity' : 'Verify & Execute Swap'}
+                        {!isConnected ? 'Initialize Identity' : `Buy ${tokenMetadata?.symbol || 'Asset'}`}
                     </button>
+                    
+                    <div className="mt-6 text-center">
+                        <span className="text-[8px] font-bold text-white/10 uppercase tracking-widest">Protocol ID: {targetTokenId}</span>
+                    </div>
                 </motion.div>
             </div>
 
