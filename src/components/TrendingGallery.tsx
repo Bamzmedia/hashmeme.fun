@@ -79,8 +79,10 @@ export default function TrendingGallery() {
                 // Optimistic UI update
                 setAssets(prev => prev.map(asset => {
                     if (asset.id === id) {
-                        const newReactions = { ...asset.reactions };
+                        const currentReactions = asset.reactions || { fire: 0, rocket: 0 };
+                        const newReactions = { ...currentReactions };
                         if (type === 'fire') newReactions.fire = (newReactions.fire || 0) + 1;
+                        if (type === 'rocket') newReactions.rocket = (newReactions.rocket || 0) + 1;
                         return { ...asset, reactions: newReactions };
                     }
                     return asset;
