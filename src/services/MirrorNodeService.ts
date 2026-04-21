@@ -171,4 +171,18 @@ export class MirrorNodeService {
             return [];
         }
     }
+
+    /**
+     * Check if a token is associated with an account
+     */
+    public async isTokenAssociated(accountId: string, tokenId: string): Promise<boolean> {
+        try {
+            const response = await fetch(`${this.baseUrl}/api/v1/accounts/${accountId}/tokens?token.id=${tokenId}`);
+            const data = await response.json();
+            return data.tokens && data.tokens.length > 0;
+        } catch (error) {
+            console.error("Association check failed:", error);
+            return false;
+        }
+    }
 }
