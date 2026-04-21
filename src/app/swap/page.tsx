@@ -46,6 +46,21 @@ export default function SwapPage() {
             
             // CELEBRATION
             triggerSuccessConfetti();
+
+            // REAL-TIME BROADCAST (HCS)
+            try {
+                const hcs = (await import('@/services/HCSService')).HCSService.getInstance();
+                await hcs.publishEvent({
+                    type: 'SWAP',
+                    data: {
+                        sender: accountId,
+                        hbarAmount: hbarAmount,
+                        targetToken: targetTokenId
+                    }
+                });
+            } catch (hcsErr) {
+                console.warn("HCS Broadcast failed:", hcsErr);
+            }
             
             setStatus(`Successfully swaped ${hbarAmount} HBAR.`);
             setHbarAmount('');

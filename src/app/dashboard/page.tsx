@@ -90,7 +90,30 @@ export default function DashboardPage() {
         // 1. BRIDGE TO IPFS
         const cid = await bridgeToIPFS(previewUrl);
 
-        // 2. MINT HTS TOKEN
+        // 2. GENERATE HIP-412 METADATA
+        setStatus(`Standardizing HTS Metadata (HIP-412)...`);
+        const metadataJSON = {
+            name: formData.name,
+            symbol: formData.symbol,
+            description: `Verified HTS Meme Asset: ${formData.name}`,
+            image: `ipfs://${cid}`,
+            type: "image/png",
+            format: "HIP412@2.0.0",
+            properties: {
+                creator: accountId,
+                origin: "HashMeme.fun"
+            }
+        };
+
+        const metaFile = new File([JSON.stringify(metadataJSON)], "metadata.json", { type: "application/json" });
+        const metaData = new FormData();
+        metaData.append('file', metaFile);
+        const metaRes = await fetch('/api/upload', { method: 'POST', body: metaData });
+        const metaResData = await metaRes.json();
+        if (!metaRes.ok) throw new Error("Metadata upload failed");
+        const metaCid = metaResData.cid;
+
+        // 3. MINT HTS TOKEN
         setStatus(`Signing Protocol Consensus...`);
         const { TokenCreateTransaction, AccountId, TokenSupplyType, TokenType, CustomFractionalFee, FeeAssessmentMethod } = await import('@hashgraph/sdk');
         
@@ -100,7 +123,7 @@ export default function DashboardPage() {
             .setDecimals(Number(formData.decimals))
             .setInitialSupply(Number(formData.initialSupply))
             .setTreasuryAccountId(AccountId.fromString(accountId!))
-            .setTokenMemo(`ipfs://${cid}`)
+            .setTokenMemo(`ipfs://${metaCid}`) // POINT TO JSON
             .setTokenType(TokenType.FungibleCommon)
             .setSupplyType(TokenSupplyType.Finite)
             .setMaxSupply(Number(formData.initialSupply));
@@ -135,6 +158,22 @@ export default function DashboardPage() {
         setStatus('');
         localStorage.removeItem(FORM_STORAGE_KEY);
         triggerSuccessConfetti();
+
+        // REAL-TIME BROADCAST (HCS)
+        try {
+            const hcs = (await import('@/services/HCSService')).HCSService.getInstance();
+            await hcs.publishEvent({
+                type: 'LAUNCH',
+                data: {
+                    name: formData.name,
+                    symbol: formData.symbol,
+                    tokenId: launchData.tokenId,
+                    creator: accountId
+                }
+            });
+        } catch (hcsErr) {
+            console.warn("HCS Broadcast failed:", hcsErr);
+        }
         
     } catch (error: any) {
         setStatus(error.message || "An error occurred.");

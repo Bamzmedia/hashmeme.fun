@@ -39,13 +39,13 @@ createAppKit({
     metadata,
     features: {
         analytics: true,
-        email: false,
-        socials: false,
+        email: true,
+        socials: ['google', 'x', 'apple', 'discord'],
     },
     themeMode: 'dark',
     themeVariables: {
-        '--w3m-accent': '#6366f1', // Indigo-500
-        '--w3m-border-radius-master': '1px',
+        '--w3m-accent': '#3b82f6', // Blue-500
+        '--w3m-border-radius-master': '20px',
     },
     // Feature Hedera wallets: HashPack and Blade
     featuredWalletIds: [
