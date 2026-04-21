@@ -3,13 +3,13 @@
 import { motion } from 'framer-motion';
 
 /**
- * Animated Gradient Mesh Background
- * Uses Framer Motion to create slow-moving, ethereal glow blobs.
+ * GlowSwap Radiant Gradient Mesh
+ * Uses Framer Motion to create slow-moving, ethereal blue and purple glow volumes.
  */
 export default function BackgroundMesh() {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* Primary Blue Blob */}
+      {/* Primary Blue Glow */}
       <motion.div 
         animate={{
           x: [0, 100, -50, 0],
@@ -24,20 +24,23 @@ export default function BackgroundMesh() {
         className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full"
       />
 
-      {/* Secondary White/Cyan Blob */}
+      {/* Radiant Purple Accent */}
       <motion.div 
         animate={{
           x: [0, -150, 100, 0],
-          y: [0, 100, -100, 0],
-          scale: [1, 0.8, 1.1, 1],
+          y: [0, 150, -100, 0],
+          scale: [1, 1.3, 0.8, 1],
         }}
         transition={{
-          duration: 30,
+          duration: 35,
           repeat: Infinity,
           ease: "linear"
         }}
-        className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-blue-400/5 blur-[120px] rounded-full"
+        className="absolute top-1/3 right-1/4 w-[900px] h-[900px] bg-purple-600/5 blur-[180px] rounded-full"
       />
+
+      {/* Fixed Deep Purple Glow */}
+      <div className="absolute bottom-[-10%] right-[-10%] w-[1000px] h-[1000px] bg-purple-900/10 blur-[200px] rounded-full" />
 
       {/* Tertiary Accent Blob */}
       <motion.div 
@@ -51,7 +54,7 @@ export default function BackgroundMesh() {
           repeat: Infinity,
           ease: "easeInOut"
         }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-[#ffffff]/3 blur-[180px] rounded-full"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] bg-blue-400/5 blur-[180px] rounded-full"
       />
     </div>
   );

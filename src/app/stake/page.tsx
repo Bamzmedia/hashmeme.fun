@@ -26,10 +26,10 @@ export default function StakePage() {
 
     const handleStake = async () => {
         if (!isConnected) return;
-        setStatus('Approving token transfer to Staking pool...');
+        setStatus('Approving token transfer to Radiant Pool...');
         await new Promise(r => setTimeout(r, 1500));
         setStakedBalance(prev => (Number(prev) + Number(stakeAmount)).toString());
-        setStatus('Successfully staked MEME tokens!');
+        setStatus('Successfully staked into GlowSwap protocol!');
         setStakeAmount('');
     };
 
@@ -41,14 +41,14 @@ export default function StakePage() {
     };
 
     const handleClaim = async () => {
-        setStatus('Claiming HBAR rewards...');
+        setStatus('Claiming Radiant HBAR rewards...');
         await new Promise(r => setTimeout(r, 1500));
         setPendingRewards('0.00');
-        setStatus('HBAR transferred to your wallet!');
+        setStatus('HBAR transferred to your radiant wallet!');
     };
 
     return (
-        <main className="min-h-screen bg-[#05070a] text-white flex flex-col items-center py-24 px-4 relative overflow-hidden">
+        <main className="min-h-screen bg-[#05070a] text-white flex flex-col items-center py-24 px-4 relative overflow-hidden selection:bg-purple-500">
             <BackgroundMesh />
 
             <div className="max-w-2xl w-full z-10 pt-10">
@@ -67,10 +67,10 @@ export default function StakePage() {
                     className="flex justify-between items-center mb-12"
                 >
                     <div className="flex items-center space-x-6">
-                        <div className="w-10 h-10 border-2 border-blue-500 rotate-45 flex items-center justify-center">
-                            <div className="w-5 h-5 bg-blue-500"></div>
+                        <div className="p-1 rounded-sm border border-blue-500 rotate-45 flex items-center justify-center">
+                            <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
                         </div>
-                        <h1 className="text-3xl font-black uppercase tracking-tighter">Stake Protocol</h1>
+                        <h1 className="text-3xl font-black uppercase tracking-tighter glow-text">GlowStake v2.5</h1>
                     </div>
                 </motion.div>
 
@@ -78,16 +78,16 @@ export default function StakePage() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="frosted p-8 md:p-12 rounded-[3.5rem] shadow-neon-blue-lg relative overflow-hidden"
+                    className="glow-card p-10 md:p-12 rounded-[3.5rem] shadow-radiant-lg relative overflow-hidden"
                 >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
                         <div className="bg-black/40 p-6 rounded-3xl border border-white/5">
                             <h3 className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1">Total Staked HTS</h3>
-                            <div className="text-3xl font-black font-mono text-white tracking-tighter">{Number(stakedBalance).toLocaleString()}</div>
+                            <div className="text-3xl font-black font-mono text-white tracking-tighter glow-text">{Number(stakedBalance).toLocaleString()}</div>
                         </div>
                         <div className="bg-blue-500/10 p-6 rounded-3xl border border-blue-500/20 shadow-inner">
-                            <h3 className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-1">Pending HBAR Rewards</h3>
-                            <div className="text-3xl font-black font-mono text-blue-300 tracking-tighter">{pendingRewards} <span className="text-sm">ℏ</span></div>
+                            <h3 className="text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-1">Pending Yield Rewards</h3>
+                            <div className="text-3xl font-black font-mono text-blue-300 tracking-tighter glow-text">{pendingRewards} <span className="text-sm">ℏ</span></div>
                         </div>
                     </div>
 
@@ -112,7 +112,7 @@ export default function StakePage() {
                             <button 
                                 onClick={handleStake}
                                 disabled={!stakeAmount || Number(stakeAmount) <= 0 || !isConnected}
-                                className="w-full py-5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.4em] bg-white text-black hover:bg-blue-500 hover:text-white transition-all shadow-neon-blue disabled:opacity-20 disabled:grayscale"
+                                className="w-full py-5 rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.4em] bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white transition-all shadow-radiant disabled:opacity-20 disabled:grayscale"
                             >
                                 Stake
                             </button>
@@ -128,13 +128,13 @@ export default function StakePage() {
                         <button 
                             onClick={handleClaim}
                             disabled={Number(pendingRewards) <= 0 || !isConnected}
-                            className="w-full mt-4 py-6 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.5em] bg-blue-500 text-white hover:bg-blue-400 transition-all shadow-neon-blue disabled:opacity-20 disabled:shadow-none"
+                            className="w-full mt-4 py-7 rounded-[2rem] font-black text-[12px] uppercase tracking-[0.5em] bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 transition-all shadow-radiant-lg disabled:opacity-20 disabled:shadow-none"
                         >
-                            Claim Consensus Rewards
+                            Claim Radiant Yield
                         </button>
 
                         {status && (
-                            <div className="mt-8 p-5 bg-blue-500/10 border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest text-blue-400 animate-fade-in">
+                            <div className="mt-8 p-5 bg-blue-500/10 border border-blue-500/20 text-center text-[10px] font-black uppercase tracking-widest text-blue-400 animate-fade-in glow-text">
                                 {status}
                             </div>
                         )}
