@@ -57,15 +57,39 @@ export function useHederaSigner() {
             // Some wallets expect a transactionList (array of transactions or single base64 string)
             console.log(`Executing transaction for ${hip30Id} via native bridge...`);
             
-            const response: any = await (client as any).request({
-                method: 'hedera_signAndExecuteTransaction',
-                params: {
-                    signerAccountId: hip30Id,
-                    transactionList: txBase64
-                }
-            });
+            try {
+                const response: any = await (client as any).request({
+                    method: 'hedera_signAndExecuteTransaction',
+                    params: {
+                        signerAccountId: hip30Id,
+                        transactionList: txBase64
+                    }
+                });
+                return response;
+            } catch (rpcError: any) {
+                console.warn("Unified signAndExecute failed, attempting legacy fallback...", rpcError);
+                // Fallback sequence: Sign then Execute
+                const signedResponse: any = await (client as any).request({
+                    method: 'hedera_signTransaction',
+                    params: {
+                        signerAccountId: hip30Id,
+                        transactionList: txBase64
+                    }
+                });
+                
+                // Extract the signed transaction bytes/base64 from the wallet response
+                // Response format varies by wallet, but usually contains a signedTransaction or similar
+                const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
 
-            return response;
+                const executeResponse: any = await (client as any).request({
+                    method: 'hedera_executeTransaction',
+                    params: {
+                        signerAccountId: hip30Id,
+                        transactionList: signedTx
+                    }
+                });
+                return executeResponse;
+            }
         } catch (error: any) {
             console.error("Native Bridge Error:", error);
             throw error;
