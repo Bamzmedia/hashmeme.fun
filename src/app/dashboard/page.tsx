@@ -49,15 +49,14 @@ export default function DashboardPage() {
   const generateAIImage = async () => {
     if (!aiPrompt.trim()) return;
     setIsGenerating(true);
-    try {
-        const seed = Math.floor(Math.random() * 1000000);
-        const url = `https://gen.pollinations.ai/image/${encodeURIComponent(aiPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
-        setPreviewUrl(url);
-    } catch (e) {
-        console.error("AI Gen Failed", e);
-    } finally {
-        setIsGenerating(false);
-    }
+    setPreviewUrl(null); // Reset preview to show loading state
+    
+    // Using Pollinations for instant, free, high-quality dApp prototyping
+    const seed = Math.floor(Math.random() * 1000000);
+    const url = `https://gen.pollinations.ai/image/${encodeURIComponent(aiPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+    
+    // We set the URL, and handle the loading state via onLoad/onError on the <img> tag
+    setPreviewUrl(url);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,7 +214,16 @@ export default function DashboardPage() {
 
                 <div className="aspect-square w-full glass rounded-3xl overflow-hidden relative group">
                     {previewUrl ? (
-                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                        <img 
+                            src={previewUrl} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover" 
+                            onLoad={() => setIsGenerating(false)}
+                            onError={() => {
+                                setIsGenerating(false);
+                                setStatus("Synthesis Failed. Try a different prompt.");
+                            }}
+                        />
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-white/10 space-y-4">
                             <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
