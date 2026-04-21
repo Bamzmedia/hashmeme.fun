@@ -53,6 +53,15 @@ export default function StakePage() {
 
             <div className="max-w-2xl w-full z-10 pt-10">
                 <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-between items-center mb-8 px-4"
+                >
+                    <BackButton />
+                    <WalletConnectButton />
+                </motion.div>
+
+                <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-between items-center mb-12"
@@ -63,7 +72,6 @@ export default function StakePage() {
                         </div>
                         <h1 className="text-3xl font-black uppercase tracking-tighter">Stake Protocol</h1>
                     </div>
-                    <WalletConnectButton />
                 </motion.div>
 
                 <motion.div 
@@ -72,8 +80,6 @@ export default function StakePage() {
                     transition={{ delay: 0.2 }}
                     className="frosted p-8 md:p-12 rounded-[3.5rem] shadow-neon-blue-lg relative overflow-hidden"
                 >
-                    <div className="flex justify-start mb-8 -mt-2"><BackButton /></div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
                         <div className="bg-black/40 p-6 rounded-3xl border border-white/5">
                             <h3 className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1">Total Staked HTS</h3>
@@ -134,10 +140,6 @@ export default function StakePage() {
                         )}
                     </div>
                 </motion.div>
-            </div>
-        </main>
-    );
-}
             </div>
         </main>
     );
