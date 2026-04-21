@@ -49,9 +49,23 @@ export default function DashboardPage() {
     if (!aiPrompt.trim()) return;
     setIsGenerating(true);
     setPreviewUrl(null); 
-    const seed = Math.floor(Math.random() * 1000000);
-    const url = `https://gen.pollinations.ai/image/${encodeURIComponent(aiPrompt)}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
-    setPreviewUrl(url);
+    
+    try {
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: aiPrompt })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Synthesis failed");
+
+        setPreviewUrl(data.imageUrl);
+    } catch (error: any) {
+        console.error("AI Synthesis Error:", error);
+        alert(`Gemini Synthesis Failed: ${error.message}`);
+        setIsGenerating(false);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
