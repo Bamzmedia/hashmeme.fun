@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [createdTokenId, setCreatedTokenId] = useState<string | null>(null);
   const [step, setStep] = useState<number>(1); // 1: Design, 2: Params, 3: Consensus
-  const [selectedModel, setSelectedModel] = useState<'gemini' | 'flux'>('gemini');
+  const [selectedModel, setSelectedModel] = useState<'gemini' | 'flux'>('flux');
 
   // Persistence Logic
   useEffect(() => {

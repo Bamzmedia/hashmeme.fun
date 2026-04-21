@@ -17,35 +17,42 @@ export async function POST(req: Request) {
 
         if (model === 'flux') {
             const apiKey = process.env.SILICONFLOW_API_KEY;
-            if (!apiKey) {
-                return NextResponse.json({ error: "SiliconFlow API Key not configured" }, { status: 500 });
+            
+            if (apiKey) {
+                const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "black-forest-labs/FLUX.1-schnell",
+                        prompt: prompt,
+                        image_size: "1024x1024",
+                        batch_size: 1
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    const imageUrl = data.images?.[0]?.url || data.data?.[0]?.url;
+                    if (imageUrl) {
+                        return NextResponse.json({ 
+                            imageUrl,
+                            message: "Asset successfully synthesized by Flux.1 (Schnell) engine."
+                        });
+                    }
+                }
             }
 
-            const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: "black-forest-labs/FLUX.1-schnell",
-                    prompt: prompt,
-                    image_size: "1024x1024",
-                    batch_size: 1
-                })
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error?.message || "Flux Handshake Failed");
-            }
-
-            const imageUrl = data.images?.[0]?.url || data.data?.[0]?.url;
-            if (!imageUrl) throw new Error("Flux returned no image URL");
-
+            // High-Reliability Fallback: Pollinations Flux
+            console.log("Using Pollinations Flux fallback...");
+            const seed = Math.floor(Math.random() * 1000000);
+            const fallbackUrl = `https://gen.pollinations.ai/image/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+            
             return NextResponse.json({ 
-                imageUrl,
-                message: "Asset successfully synthesized by Flux.1 (Schnell) engine."
+                imageUrl: fallbackUrl,
+                message: "Asset synthesized via Flux (Radiant Mesh Fallback)."
             });
 
         } else {
