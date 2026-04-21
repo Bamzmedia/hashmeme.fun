@@ -51,13 +51,35 @@ export default function StakePage() {
         <main className="min-h-screen bg-[#05070a] text-white flex flex-col items-center py-24 px-4 relative overflow-hidden">
             <BackgroundMesh />
 
+            <nav className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-black/40 backdrop-blur-md z-50 px-8 flex items-center justify-between">
+                <div className="flex items-center space-x-12">
+                    <Link href="/" className="flex items-center space-x-3 group outline-none">
+                        <div className="p-1 rounded-sm border border-blue-500 group-hover:rotate-45 transition-transform duration-500 flex items-center justify-center">
+                            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
+                        </div>
+                        <span className="text-lg font-black tracking-tighter uppercase glow-text">GlowSwap / HUB</span>
+                    </Link>
+                    
+                    <div className="hidden md:flex items-center space-x-8">
+                        <Link href="/swap" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Swap</Link>
+                        <Link href="/dashboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Launchpad</Link>
+                        <Link href="/leaderboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Leaderboard</Link>
+                        <Link href="/stake" className="text-[10px] font-bold text-white uppercase tracking-widest border-b border-blue-500 pb-1">Staking</Link>
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-6">
+                    <WalletConnectButton />
+                </div>
+            </nav>
+
             <div className="max-w-6xl w-full z-10 pt-10">
                 
                 {/* HEADER & TOP PROTOCOL STATS */}
                 <motion.div 
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col md:flex-row justify-between items-center mb-16 gap-10"
+                    className="flex flex-col md:flex-row justify-between items-center mb-16 gap-10 pt-10"
                 >
                     <div className="flex items-center space-x-6">
                         <div className="p-1 rounded-sm border border-blue-500 rotate-45 flex items-center justify-center">
@@ -67,10 +89,6 @@ export default function StakePage() {
                             <h1 className="text-3xl font-black uppercase tracking-tighter glow-text">GlowStake v3.0</h1>
                             <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-1">Institutional Yield Infrastructure</p>
                         </div>
-                    </div>
-                    
-                    <div className="flex-grow flex justify-center md:justify-end">
-                        <WalletConnectButton />
                     </div>
                 </motion.div>
 

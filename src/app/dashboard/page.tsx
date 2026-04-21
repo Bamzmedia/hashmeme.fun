@@ -102,7 +102,29 @@ export default function DashboardPage() {
       <div className="max-w-6xl w-full z-10 pt-10">
         
         {/* HEADER & STEPPER */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-20 gap-8">
+        <nav className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-black/40 backdrop-blur-md z-50 px-8 flex items-center justify-between">
+                <div className="flex items-center space-x-12">
+                    <Link href="/" className="flex items-center space-x-3 group outline-none">
+                        <div className="p-1 rounded-sm border border-blue-500 group-hover:rotate-45 transition-transform duration-500 flex items-center justify-center">
+                            <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
+                        </div>
+                        <span className="text-lg font-black tracking-tighter uppercase glow-text">GlowSwap / HUB</span>
+                    </Link>
+                    
+                    <div className="hidden md:flex items-center space-x-8">
+                        <Link href="/swap" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Swap</Link>
+                        <Link href="/dashboard" className="text-[10px] font-bold text-white uppercase tracking-widest border-b border-blue-500 pb-1">Launchpad</Link>
+                        <Link href="/leaderboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Leaderboard</Link>
+                        <Link href="/stake" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Staking</Link>
+                    </div>
+                </div>
+
+                <div className="flex items-center space-x-6">
+                    <WalletConnectButton />
+                </div>
+            </nav>
+
+        <div className="flex flex-col md:flex-row justify-between items-center mb-20 gap-8 pt-10">
             <div className="flex items-center space-x-6">
                 <div className="p-1 rounded-sm border border-blue-500 rotate-45 flex items-center justify-center">
                     <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
@@ -119,14 +141,16 @@ export default function DashboardPage() {
                     { id: 2, label: 'Metadata' },
                     { id: 3, label: 'Consensus' }
                 ].map((s) => (
-                    <div key={s.id} className={`flex items-center space-x-3 px-6 py-3 rounded-xl transition-all ${step >= s.id ? 'bg-blue-500 text-white shadow-radiant' : 'text-white/20'}`}>
+                    <button 
+                        key={s.id} 
+                        onClick={() => setStep(s.id)}
+                        className={`flex items-center space-x-3 px-6 py-3 rounded-xl transition-all ${step === s.id ? 'bg-blue-500 text-white shadow-radiant' : 'text-white/20 hover:text-white/40'}`}
+                    >
                         <span className="text-[10px] font-black">{s.id}</span>
                         <span className="text-[9px] font-black uppercase tracking-widest hidden lg:block">{s.label}</span>
-                    </div>
+                    </button>
                 ))}
             </div>
-
-            <WalletConnectButton />
         </div>
 
         {/* MISSION CONTROL CENTER */}
@@ -135,8 +159,8 @@ export default function DashboardPage() {
             {/* TOP: CINEMATIC PREVIEW */}
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glow-card rounded-[4rem] p-4 relative overflow-hidden group min-h-[400px] flex flex-col lg:flex-row"
+                animate={{ opacity: step === 1 ? 1 : 0.2, scale: step === 1 ? 1 : 0.98, pointerEvents: step === 1 ? 'auto' : 'none' }}
+                className="glow-card rounded-[4rem] p-4 relative overflow-hidden group min-h-[400px] flex flex-col lg:flex-row transition-all duration-500"
             >
                 <div className="lg:w-1/2 aspect-square relative overflow-hidden rounded-[3.5rem] border border-white/5">
                     {previewUrl ? (
@@ -180,7 +204,17 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* BOTTOM: PARAMETER GRID */}
-            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <motion.div 
+                initial={{ opacity: 0, y: 50 }} 
+                animate={{ 
+                    opacity: step >= 2 ? 1 : 0.2, 
+                    y: 0,
+                    scale: step >= 2 ? 1 : 0.98,
+                    pointerEvents: step >= 2 ? 'auto' : 'none'
+                }} 
+                transition={{ duration: 0.5 }} 
+                className="grid grid-cols-1 lg:grid-cols-3 gap-8 transition-all"
+            >
                 {createdTokenId ? (
                     <div className="col-span-full glow-card p-16 flex flex-col items-center justify-center space-y-10 rounded-[4rem]">
                         <div className="w-24 h-24 bg-blue-500/20 text-blue-500 rounded-full flex items-center justify-center border border-blue-500/30 shadow-radiant"><svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></div>
@@ -191,6 +225,12 @@ export default function DashboardPage() {
                 ) : (
                     <>
                         <div className="lg:col-span-2 glow-card p-12 rounded-[3.5rem] space-y-10">
+                            <div className="hidden md:flex items-center space-x-8">
+                                <Link href="/swap" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Swap</Link>
+                                <Link href="/dashboard" className="text-[10px] font-bold text-white uppercase tracking-widest border-b border-blue-500 pb-1">Launchpad</Link>
+                                <Link href="/leaderboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Leaderboard</Link>
+                                <Link href="/stake" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Staking</Link>
+                            </div>
                             <div className="flex justify-between items-center">
                                 <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Genesis Parameters</h3>
                                 <div className="text-[8px] font-bold text-white/10 uppercase tracking-widest">v3.0.0 Stable</div>

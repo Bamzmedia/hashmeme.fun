@@ -45,8 +45,9 @@ export default function Home() {
                     </Link>
                     
                     <div className="hidden md:flex items-center space-x-8">
-                        <Link href="/swap" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Swap</Link>
+                        <Link href="/swap" className="text-[10px] font-bold text-white uppercase tracking-widest border-b border-blue-500 pb-1">Swap</Link>
                         <Link href="/dashboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Launchpad</Link>
+                        <Link href="/leaderboard" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Leaderboard</Link>
                         <Link href="/stake" className="text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-widest transition-colors">Staking</Link>
                     </div>
                 </div>
