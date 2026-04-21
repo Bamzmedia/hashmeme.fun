@@ -163,7 +163,7 @@ export default function DashboardPage() {
             {/* TOP: CINEMATIC PREVIEW */}
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: step === 1 ? 1 : 0.2, scale: step === 1 ? 1 : 0.98, pointerEvents: step === 1 ? 'auto' : 'none' }}
+                animate={{ opacity: step === 1 ? 1 : 0.4, scale: step === 1 ? 1 : 0.98 }}
                 className="glow-card rounded-[4rem] p-4 relative overflow-hidden group min-h-[400px] flex flex-col lg:flex-row transition-all duration-500"
             >
                 <div className="lg:w-1/2 aspect-square relative overflow-hidden rounded-[3.5rem] border border-white/5">
@@ -211,10 +211,9 @@ export default function DashboardPage() {
             <motion.div 
                 initial={{ opacity: 0, y: 50 }} 
                 animate={{ 
-                    opacity: step >= 2 ? 1 : 0.2, 
+                    opacity: step >= 2 ? 1 : 0.4, 
                     y: 0,
-                    scale: step >= 2 ? 1 : 0.98,
-                    pointerEvents: step >= 2 ? 'auto' : 'none'
+                    scale: step >= 2 ? 1 : 0.98
                 }} 
                 transition={{ duration: 0.5 }} 
                 className="grid grid-cols-1 lg:grid-cols-3 gap-8 transition-all"
@@ -255,8 +254,12 @@ export default function DashboardPage() {
 
                             {status && <div className="p-6 bg-blue-500/10 border border-blue-500/20 text-center text-[10px] text-blue-400 font-black uppercase tracking-widest rounded-2xl animate-glow-pulse-slow">{status}</div>}
 
-                            <button onClick={handleCreateToken} disabled={loading || !isConnected || !previewUrl} className="w-full py-10 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[12px] uppercase tracking-[0.5em] transition-all shadow-radiant disabled:opacity-5 rounded-[2rem]">
-                                {loading ? 'HUB SYNC...' : 'INITIALIZE LAUNCH'}
+                            <button 
+                                onClick={handleCreateToken} 
+                                disabled={loading || !isConnected || !previewUrl || !formData.name || !formData.symbol} 
+                                className="w-full py-10 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[12px] uppercase tracking-[0.5em] transition-all shadow-radiant disabled:opacity-5 rounded-[2rem]"
+                            >
+                                {loading ? 'HUB SYNC...' : !isConnected ? 'CONNECT WALLET' : !previewUrl ? 'AWAITING SYNTHESIS' : 'INITIALIZE LAUNCH'}
                             </button>
                         </div>
                     </>
