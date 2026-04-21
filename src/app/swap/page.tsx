@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useHederaAccount } from '@/hooks/useHederaAccount';
 import { useHederaSigner } from '@/hooks/useHederaSigner';
 import WalletConnectButton from '@/components/WalletConnectButton';
@@ -9,19 +9,26 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import BackgroundMesh from '@/components/effects/BackgroundMesh';
 import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
+import { useSearchParams } from 'next/navigation';
 
-export default function SwapPage() {
+function SwapContent() {
     const { accountId, isConnected } = useHederaAccount();
     const { signer } = useHederaSigner();
+    const searchParams = useSearchParams();
     
     // Dynamic token mapping
-    const [targetTokenId, setTargetTokenId] = useState<string>("0.0.1234567"); 
+    const [targetTokenId, setTargetTokenId] = useState<string>("0.0.5241088"); // Default to GLOW
     const [hbarAmount, setHbarAmount] = useState<string>('');
     const [slippage, setSlippage] = useState<number>(1.0); 
     const [showSettings, setShowSettings] = useState<boolean>(false);
     const [status, setStatus] = useState<string>('');
     
-    // Fetch live quote leveraging our custom V2 AMM hook
+    // Sync with URL parameter
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (id) setTargetTokenId(id);
+    }, [searchParams]);
+
     const { expectedOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", targetTokenId);
 
     const executeSwap = async () => {
@@ -70,10 +77,8 @@ export default function SwapPage() {
 
     return (
         <main className="min-h-screen bg-[#05070a] text-white flex flex-col font-sans selection:bg-purple-500 selection:text-white relative">
-            
             <BackgroundMesh />
 
-            {/* TOP NAVIGATION BAR */}
             <nav className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-black/40 backdrop-blur-md z-50 px-8 flex items-center justify-between">
                 <div className="flex items-center space-x-12">
                     <Link href="/" className="flex items-center space-x-3 group">
@@ -95,7 +100,6 @@ export default function SwapPage() {
                 </div>
             </nav>
 
-            {/* CENTERED SWAP WIDGET */}
             <div className="flex-grow flex items-center justify-center pt-24 px-4 relative z-10">
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -142,7 +146,6 @@ export default function SwapPage() {
                         </motion.div>
                     )}
 
-                    {/* INPUT SECTION */}
                     <div className="space-y-2 relative z-10">
                         <div className="p-6 bg-white/5 border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all focus-within:border-blue-500/50">
                             <div className="flex justify-between items-center mb-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
@@ -211,5 +214,17 @@ export default function SwapPage() {
                 &copy; 2026 GlowSwap Protocol &bull; Radiant Build v2.5.0
             </footer>
         </main>
+    );
+}
+
+export default function SwapPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#05070a] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-purple-500 rounded-full animate-spin"></div>
+            </div>
+        }>
+            <SwapContent />
+        </Suspense>
     );
 }

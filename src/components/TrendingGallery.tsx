@@ -116,8 +116,8 @@ export default function TrendingGallery() {
                                                     onReact={() => handleReact(asset.id, 'fire')} 
                                                 />
                                             </div>
-                                            <Link href="/swap" className="block w-40">
-                                                <button className="w-full py-4 bg-white text-black hover:bg-blue-500 hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all shadow-neon-blue active:scale-95">
+                                            <Link href={`/swap?id=${asset.token_id}`} className="block w-40">
+                                                <button className="w-full py-4 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all shadow-radiant active:scale-95">
                                                     Trade
                                                 </button>
                                             </Link>
