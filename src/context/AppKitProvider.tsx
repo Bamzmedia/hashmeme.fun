@@ -54,7 +54,7 @@ createAppKit({
     ],
     // Ensure Hedera-specific JSON-RPC methods are enabled
     includeWalletConnectAdvisories: true,
-    customNamespaces: {
+    optionalNamespaces: {
         hedera: {
             methods: [
                 'hedera_signAndExecuteTransaction',
