@@ -29,7 +29,7 @@ export default function CommunityChat() {
     };
 
     return (
-        <div className="glass p-10 flex flex-col h-[550px] rounded-[3rem] relative overflow-hidden group">
+        <div className="frosted p-10 flex flex-col h-[550px] rounded-[3rem] relative overflow-hidden group">
             <div className="flex justify-between items-center mb-10">
                 <div className="flex items-center space-x-6">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-neon-blue"></div>
@@ -62,7 +62,7 @@ export default function CommunityChat() {
                                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
-                                <div className={`p-5 glass max-w-[90%] text-[12px] leading-relaxed relative ${
+                                <div className={`p-5 frosted max-w-[90%] text-[12px] leading-relaxed relative ${
                                     isMe 
                                     ? 'border-blue-500/30 text-white' 
                                     : 'border-white/10 text-white/60'

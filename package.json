@@ -15,6 +15,8 @@
     "@reown/appkit-adapter-wagmi": "^1.6.0",
     "@tanstack/react-query": "^5.99.2",
     "@walletconnect/sign-client": "^2.23.9",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^12.38.0",
     "hashconnect": "^3.0.14",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

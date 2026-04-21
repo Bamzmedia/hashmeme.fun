@@ -6,6 +6,9 @@ import { useHederaSigner } from '@/hooks/useHederaSigner';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import { useSaucerSwapQuote } from '@/hooks/useSaucerSwapQuote';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import BackgroundMesh from '@/components/effects/BackgroundMesh';
+import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
 
 export default function SwapPage() {
     const { accountId, isConnected } = useHederaAccount();
@@ -31,7 +34,7 @@ export default function SwapPage() {
 
         try {
             const { ContractExecuteTransaction, ContractId, Hbar, HbarUnit } = await import('@hashgraph/sdk');
-            const routerId = "0.0.3959082"; // HTS V2 Router
+            const routerId = "0.0.3959082"; 
             
             const transaction = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromString(routerId))
@@ -39,7 +42,11 @@ export default function SwapPage() {
                 .setPayableAmount(Hbar.from(Number(hbarAmount), HbarUnit.Hbar))
                 .setFunction("swapExactETHForTokens", undefined);
 
-            const response = await signer.executeTransaction(transaction);
+            await signer.executeTransaction(transaction);
+            
+            // CELEBRATION
+            triggerSuccessConfetti();
+            
             setStatus(`Successfully swaped ${hbarAmount} HBAR.`);
             setHbarAmount('');
             
@@ -49,8 +56,10 @@ export default function SwapPage() {
     };
 
     return (
-        <main className="min-h-screen bg-[#05070a] text-white flex flex-col font-sans selection:bg-blue-500 selection:text-white">
+        <main className="min-h-screen bg-[#05070a] text-white flex flex-col font-sans selection:bg-blue-500 selection:text-white relative">
             
+            <BackgroundMesh />
+
             {/* TOP NAVIGATION BAR */}
             <nav className="fixed top-0 left-0 w-full h-20 border-b border-white/5 bg-black/40 backdrop-blur-md z-50 px-8 flex items-center justify-between">
                 <div className="flex items-center space-x-12">
@@ -69,38 +78,39 @@ export default function SwapPage() {
                 </div>
 
                 <div className="flex items-center space-x-6">
-                    <div className="hidden lg:flex items-center space-x-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-[9px] font-bold text-blue-400 uppercase">HTS V2 Protocol</span>
-                    </div>
                     <WalletConnectButton />
                 </div>
             </nav>
 
-            {/* AMBIENT BACKGROUND GLOWS */}
-            <div className="fixed top-1/4 left-1/4 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none"></div>
-            <div className="fixed bottom-1/4 right-1/4 w-[600px] h-[600px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
-
             {/* CENTERED SWAP WIDGET */}
             <div className="flex-grow flex items-center justify-center pt-24 px-4 relative z-10">
-                <div className="max-w-md w-full glass rounded-[2.5rem] p-8 shadow-neon-blue-lg relative overflow-hidden group">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="max-w-md w-full frosted rounded-[2.5rem] p-8 shadow-neon-blue-lg relative overflow-hidden group"
+                >
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
                     
-                    <div className="flex justify-between items-center mb-8">
+                    <div className="flex justify-between items-center mb-8 relative z-10">
                         <div>
                             <h2 className="text-sm font-black uppercase tracking-[0.2em] mb-1">Swap Tokens</h2>
                             <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest">Optimized Blue Route</p>
                         </div>
                         <button 
                             onClick={() => setShowSettings(!showSettings)}
-                            className={`p-2 transition-all border ${showSettings ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 text-white/30 hover:text-white'}`}
+                            className={`p-2 transition-all border outline-none ${showSettings ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 text-white/30 hover:text-white'}`}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                         </button>
                     </div>
 
                     {showSettings && (
-                        <div className="mb-8 p-6 bg-white/5 border border-white/5 animate-fade-in translate-y-0">
+                        <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mb-8 p-6 bg-white/5 border border-white/5 relative z-10 overflow-hidden"
+                        >
                             <label className="text-[10px] font-bold uppercase text-white/30 tracking-widest mb-4 block">Target Asset ID</label>
                             <input 
                                 type="text"
@@ -116,15 +126,14 @@ export default function SwapPage() {
                                     ))}
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
 
                     {/* INPUT SECTION */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative z-10">
                         <div className="p-6 bg-white/5 border border-white/5 hover:border-blue-500/30 transition-all focus-within:border-blue-500 focus-within:shadow-neon-blue">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">From</span>
-                                <span className="text-[10px] font-bold text-white/40 uppercase">Balance: --</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <input 
@@ -141,14 +150,12 @@ export default function SwapPage() {
                             </div>
                         </div>
 
-                        {/* Switch Icon */}
                         <div className="flex justify-center -my-6 relative z-20">
-                            <div className="w-10 h-10 glass border border-white/10 flex items-center justify-center shadow-lg hover:rotate-180 transition-transform duration-500 cursor-pointer">
+                            <div className="w-10 h-10 frosted border border-white/10 flex items-center justify-center shadow-lg hover:rotate-180 transition-transform duration-500 cursor-pointer">
                                 <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                             </div>
                         </div>
 
-                        {/* OUTPUT SECTION */}
                         <div className="p-6 bg-white/5 border border-white/5">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">To (Estimated)</span>
@@ -167,28 +174,27 @@ export default function SwapPage() {
                     </div>
 
                     {status && (
-                        <div className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 text-center text-[9px] text-blue-400 font-bold uppercase tracking-[0.2em] animate-fade-in">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 text-center text-[9px] text-blue-400 font-bold uppercase tracking-[0.2em]"
+                        >
                             {status}
-                        </div>
+                        </motion.div>
                     )}
 
                     <button 
                         onClick={executeSwap}
                         disabled={!hbarAmount || Number(hbarAmount) <= 0 || !isConnected}
-                        className="w-full mt-8 py-5 bg-white text-black hover:bg-blue-500 hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all shadow-neon-blue active:scale-[0.98] disabled:opacity-30 disabled:grayscale"
+                        className="w-full mt-8 py-5 bg-white text-black hover:bg-blue-500 hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all shadow-neon-blue active:scale-[0.98] disabled:opacity-30 disabled:grayscale relative z-10"
                     >
                         {!isConnected ? 'Initialize Identity' : 'Verify & Swap'}
                     </button>
-                    
-                    <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-center opacity-30 group-hover:opacity-100 transition-opacity">
-                        <span className="text-[9px] font-bold tracking-widest uppercase">Expected Ledger Arrival</span>
-                        <span className="text-[9px] font-mono">&lt; 3.0s</span>
-                    </div>
-                </div>
+                </motion.div>
             </div>
 
             <footer className="py-20 text-center text-white/10 text-[9px] font-bold uppercase tracking-[0.5em]">
-                &copy; 2026 HashMeme // Glassmorphic DeFi Layer
+                &copy; 2026 HashMeme Protocol // Frosted Glass v2.1
             </footer>
         </main>
     );

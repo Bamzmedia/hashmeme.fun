@@ -35,7 +35,7 @@ export default function TradeFeed() {
 
     if (loading && activities.length === 0) {
         return (
-            <div className="glass p-10 flex flex-col h-full rounded-[3rem] animate-pulse">
+            <div className="frosted p-10 flex flex-col h-full rounded-[3rem] animate-pulse">
                 <div className="h-4 w-24 bg-white/5 mb-8"></div>
                 <div className="space-y-6">
                     {[1, 2, 3, 4].map(i => (
@@ -47,7 +47,7 @@ export default function TradeFeed() {
     }
 
     return (
-        <div className="glass p-10 flex flex-col h-full rounded-[3rem] relative overflow-hidden group">
+        <div className="frosted p-10 flex flex-col h-full rounded-[3rem] relative overflow-hidden group">
             <div className="flex justify-between items-center mb-10">
                 <h3 className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.4em] flex items-center">
                     <span className="w-1.5 h-1.5 bg-blue-500 mr-4 animate-ping rounded-full"></span>

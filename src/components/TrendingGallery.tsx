@@ -49,7 +49,7 @@ export default function TrendingGallery() {
                                 return (
                                     <div 
                                         key={asset.id} 
-                                        className="glass p-8 rounded-[2rem] hover:shadow-neon-blue transition-all group relative overflow-hidden"
+                                        className="frosted p-8 rounded-[2rem] hover:shadow-neon-blue transition-all group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl group-hover:bg-blue-500/10 transition-colors"></div>
                                         
