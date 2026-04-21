@@ -19,7 +19,11 @@ export async function POST(req: Request) {
 
         // 2. Prepare for Pinata
         const pinataJwt = process.env.PINATA_JWT;
-        if (!pinataJwt) throw new Error("Missing Pinata Auth");
+        if (!pinataJwt || pinataJwt === 'YOUR_PINATA_JWT_PLACEHOLDER') {
+            return NextResponse.json({ 
+                error: "Pinata auth missing in Bridge. Please configure PINATA_JWT." 
+            }, { status: 500 });
+        }
 
         const formData = new FormData();
         const file = new File([blob], name || "ai_generated.png", { type: "image/png" });

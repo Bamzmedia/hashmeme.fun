@@ -23,8 +23,10 @@ export async function POST(request: Request) {
     data.append('pinataOptions', pinataOptions);
 
     const pinataJwt = process.env.PINATA_JWT;
-    if (!pinataJwt) {
-        throw new Error("Missing PINATA_JWT environment variable");
+    if (!pinataJwt || pinataJwt === 'YOUR_PINATA_JWT_PLACEHOLDER') {
+        return NextResponse.json({ 
+            error: "Pinata Authorization Missing. Please set your actual PINATA_JWT in the environment secrets." 
+        }, { status: 500 });
     }
 
     const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
