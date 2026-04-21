@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [createdTokenId, setCreatedTokenId] = useState<string | null>(null);
   const [step, setStep] = useState<number>(1); // 1: Design, 2: Params, 3: Consensus
+  const [selectedModel, setSelectedModel] = useState<'gemini' | 'flux'>('gemini');
 
   // Persistence Logic
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function DashboardPage() {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: aiPrompt })
+            body: JSON.stringify({ prompt: aiPrompt, model: selectedModel })
         });
 
         const data = await response.json();
@@ -205,9 +206,31 @@ export default function DashboardPage() {
 
                     {mode === 'ai' ? (
                         <div className="space-y-6">
-                            <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase tracking-widest text-white/20">Synthesis Prompt</span><span className="text-[10px] font-mono text-blue-500">Flux Engine v1.0</span></div>
+                            <div className="flex flex-col space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Synthesis Engine</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 bg-black/20 p-1.5 rounded-2xl border border-white/5">
+                                    <button 
+                                        onClick={() => setSelectedModel('gemini')} 
+                                        className={`py-3 text-[8px] font-black uppercase tracking-widest transition-all rounded-xl border ${selectedModel === 'gemini' ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-radiant' : 'border-transparent text-white/20 hover:text-white'}`}
+                                    >
+                                        Gemini v3.0
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedModel('flux')} 
+                                        className={`py-3 text-[8px] font-black uppercase tracking-widest transition-all rounded-xl border ${selectedModel === 'flux' ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-radiant' : 'border-transparent text-white/20 hover:text-white'}`}
+                                    >
+                                        Flux Core
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center"><span className="text-[10px] font-black uppercase tracking-widest text-white/20">Synthesis Prompt</span><span className="text-[10px] font-mono text-blue-500">{selectedModel === 'flux' ? 'FLUX.1-schnell' : 'Imagen-3.0'}</span></div>
                             <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="Describe your asset core..." className="w-full bg-white/5 border border-white/5 px-8 py-6 text-sm text-white outline-none focus:border-blue-500 transition-all font-bold rounded-[2rem] min-h-[140px]" />
-                            <button onClick={generateAIImage} disabled={isGenerating || !aiPrompt.trim()} className="w-full py-6 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all shadow-radiant disabled:opacity-20 rounded-2xl">Initialize Synthesis</button>
+                            <button onClick={generateAIImage} disabled={isGenerating || !aiPrompt.trim()} className="w-full py-6 bg-white text-black hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-500 hover:text-white font-black text-[11px] uppercase tracking-[0.4em] transition-all shadow-radiant disabled:opacity-20 rounded-2xl">
+                                {isGenerating ? 'INITIALIZING...' : 'Initialize Synthesis'}
+                            </button>
                         </div>
                     ) : (
                         <div className="space-y-6">
