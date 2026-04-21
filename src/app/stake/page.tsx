@@ -5,6 +5,7 @@ import { useHederaAccount } from '@/hooks/useHederaAccount';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import BackButton from '@/components/BackButton';
 import BackgroundMesh from '@/components/effects/BackgroundMesh';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function StakePage() {

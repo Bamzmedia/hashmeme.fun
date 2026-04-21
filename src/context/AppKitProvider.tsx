@@ -53,20 +53,21 @@ createAppKit({
         '22515b7c7b744d0a80e698380e227092'  // Blade
     ],
     // Ensure Hedera-specific JSON-RPC methods are enabled
-    includeWalletConnectAdvisories: true,
-    optionalNamespaces: {
-        hedera: {
-            methods: [
-                'hedera_signAndExecuteTransaction',
-                'hedera_signAndReturnTransaction',
-                'hedera_signTransaction',
-                'hedera_executeTransaction',
-                'hedera_signMessage'
-            ],
-            chains: ['hedera:mainnet', 'hedera:testnet'],
-            events: ['chainChanged', 'accountsChanged']
+    ...({
+        optionalNamespaces: {
+            hedera: {
+                methods: [
+                    'hedera_signAndExecuteTransaction',
+                    'hedera_signAndReturnTransaction',
+                    'hedera_signTransaction',
+                    'hedera_executeTransaction',
+                    'hedera_signMessage'
+                ],
+                chains: ['hedera:mainnet', 'hedera:testnet'],
+                events: ['chainChanged', 'accountsChanged']
+            }
         }
-    }
+    } as any)
 });
 
 export const AppKitProvider = ({ children }: { children: ReactNode }) => {

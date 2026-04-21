@@ -7,6 +7,7 @@ import WalletConnectButton from '@/components/WalletConnectButton';
 import BackButton from '@/components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import BackgroundMesh from '@/components/effects/BackgroundMesh';
+import Link from 'next/link';
 import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
 
 const FORM_STORAGE_KEY = 'glowlaunch_v3_mission_control';
