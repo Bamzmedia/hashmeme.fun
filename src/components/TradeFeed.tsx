@@ -18,7 +18,7 @@ export default function TradeFeed() {
     const fetchActivity = async () => {
         try {
             const mirrorService = MirrorNodeService.getInstance();
-            const realActivity = await mirrorService.getLiveActivity(12);
+            const realActivity = await mirrorService.getLiveActivity(8); // Focused feed
             setActivities(realActivity);
         } catch (e) {
             console.error("Failed to fetch live activity");
@@ -35,11 +35,11 @@ export default function TradeFeed() {
 
     if (loading && activities.length === 0) {
         return (
-            <div className="bg-transparent border border-white/10 p-8 flex flex-col h-full">
-                <div className="h-4 w-24 border-b border-white/20 mb-6"></div>
-                <div className="space-y-4">
+            <div className="glass p-10 flex flex-col h-full rounded-[3rem] animate-pulse">
+                <div className="h-4 w-24 bg-white/5 mb-8"></div>
+                <div className="space-y-6">
                     {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-12 border border-white/5 w-full"></div>
+                        <div key={i} className="h-14 bg-white/5 w-full"></div>
                     ))}
                 </div>
             </div>
@@ -47,43 +47,39 @@ export default function TradeFeed() {
     }
 
     return (
-        <div className="bg-transparent border border-white/10 p-8 flex flex-col h-full relative overflow-hidden group">
+        <div className="glass p-10 flex flex-col h-full rounded-[3rem] relative overflow-hidden group">
             <div className="flex justify-between items-center mb-10">
-                <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.4em] flex items-center">
-                    <span className="w-1.5 h-1.5 bg-white mr-3 animate-ping"></span>
-                    Live Ledger
+                <h3 className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.4em] flex items-center">
+                    <span className="w-1.5 h-1.5 bg-blue-500 mr-4 animate-ping rounded-full"></span>
+                    HCS Ledger Feed
                 </h3>
             </div>
 
-            <div className="flex-grow space-y-6 overflow-hidden relative">
+            <div className="flex-grow space-y-10 overflow-hidden relative">
                 {activities.map((activity, i) => (
                     <div 
                         key={activity.id} 
-                        className="flex items-center space-x-6 pb-6 border-b border-white/5 last:border-0"
+                        className="flex items-center space-x-8 pb-10 border-b border-white/5 last:border-0"
                     >
-                        <div className="w-8 h-8 bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white/60 font-medium text-[8px]">HTS</span>
+                        <div className="w-10 h-10 glass border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-400 font-bold text-[9px]">HTS</span>
                         </div>
                         <div className="flex-grow min-w-0">
                             <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-bold text-white truncate">
+                                <span className="text-[11px] font-black uppercase text-white truncate">
                                     {activity.sender}
                                 </span>
-                                <span className="text-[8px] font-mono text-white/30">
+                                <span className="text-[9px] font-mono text-white/20">
                                     {new Date(Number(activity.timestamp) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
-                            <div className="flex items-center space-x-2 mt-1">
-                                <span className="text-[9px] text-white/20 font-bold uppercase tracking-tight">Syncing</span>
-                                <span className="text-[9px] text-white font-bold tracking-widest">{activity.token}</span>
+                            <div className="flex items-center space-x-3 mt-2">
+                                <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest">Active</span>
+                                <span className="text-[10px] text-blue-400 font-black tracking-tighter italic">{activity.token}</span>
                             </div>
                         </div>
                     </div>
                 ))}
-            </div>
-
-            <div className="mt-10 pt-4 border-t border-white/10 text-center">
-                <p className="text-[8px] text-white/20 font-bold uppercase tracking-[0.4em]">Node 0.0.3 Verification</p>
             </div>
         </div>
     );

@@ -31,7 +31,22 @@ body {
   border: 1px solid #ffffff;
 }
 
-/* Remove Degen Glows */
+/* DeFi Glassmorphism & Neon Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shadow-neon-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.shadow-neon-blue-lg {
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
+}
+
+/* Remove Degen Glows (Already disabled in previous minimalist update) */
 .bg-gradient-to-r, .blur-2xl, .animate-pulse {
-  /* Softened or disabled for minimalist look */
+  /* Softened for minimalist feel */
 }
