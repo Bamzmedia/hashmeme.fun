@@ -61,16 +61,14 @@ export default function DashboardPage() {
   const bridgeToIPFS = async (url: string) => {
     setStatus("Bridging Intelligence to IPFS...");
     try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const file = new File([blob], "ai_meme.png", { type: "image/png" });
-        
-        const data = new FormData();
-        data.append('file', file);
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: data });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error);
-        return uploadData.cid;
+        const response = await fetch('/api/bridge-ipfs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, name: formData.name })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        return data.cid;
     } catch (e: any) {
         throw new Error(`IPFS Bridge Error: ${e.message}`);
     }
