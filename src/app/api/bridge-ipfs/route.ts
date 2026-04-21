@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const formData = new FormData();
         const file = new File([blob], name || "ai_generated.png", { type: "image/png" });
         formData.append('file', file);
-        formData.append('pinataMetadata', JSON.stringify({ name: name || "hashmeme_ai_gen" }));
+        formData.append('pinataMetadata', JSON.stringify({ name: name || "glowswap_ai_gen" }));
         formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }));
 
         // 3. Upload to Pinata

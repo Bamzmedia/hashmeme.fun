@@ -34,7 +34,7 @@ export function useHederaSigner() {
         try {
             // 1. Resolve Hedera Identities and Network
             const network = chain?.id === 295 ? 'mainnet' : 'testnet';
-            const hederaId = localStorage.getItem('hashmeme_last_account_id');
+            const hederaId = localStorage.getItem('glowswap_last_account_id');
             if (!hederaId) throw new Error("Hedera Account ID not resolved yet. Please reconnect.");
 
             // 2. Prepare Transaction for HashPack/Blade

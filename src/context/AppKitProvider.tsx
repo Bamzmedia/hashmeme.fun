@@ -25,10 +25,10 @@ const wagmiAdapter = new WagmiAdapter({
 
 // Metadata for the dApp
 const metadata = {
-    name: "HashMeme Platform",
-    description: "Premium Meme Launchpad on Hedera",
-    url: "https://hashmeme.fun",
-    icons: ["https://hashmeme.fun/logo.png"]
+    name: "GlowSwap Protocol",
+    description: "The Radiant Hub for Hedera Memes & Staking",
+    url: "https://glowswap.vercel.app",
+    icons: ["https://glowswap.vercel.app/logo.png"]
 };
 
 // 5. Create AppKit with Hedera Focus

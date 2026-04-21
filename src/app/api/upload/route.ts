@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const pinataMetadata = JSON.stringify({
-      name: file.name || "hashmeme_upload"
+      name: file.name || "glowswap_upload"
     });
 
     const pinataOptions = JSON.stringify({
