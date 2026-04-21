@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import BackgroundMesh from '@/components/effects/BackgroundMesh';
 import WalletConnectButton from '@/components/WalletConnectButton';
+import BackButton from '@/components/BackButton';
 
 // Initialize Supabase (Public)
 const supabase = createClient(
@@ -82,15 +83,18 @@ export default function LeaderboardPage() {
 
             <div className="max-w-7xl mx-auto w-full pt-48 pb-32 px-6 relative z-10 transition-all">
                 
-                <div className="flex flex-col items-center text-center mb-24 space-y-8">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center space-x-3 px-6 py-2 glow-card rounded-full text-[10px] font-bold tracking-[0.4em] uppercase text-blue-400"
-                    >
-                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-neon-blue"></span>
-                        <span>Radiant Merit System</span>
-                    </motion.div>
+                <div className="flex flex-col items-center text-center mb-24 space-y-12">
+                    <div className="flex items-center space-x-12">
+                        <BackButton />
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="inline-flex items-center space-x-3 px-6 py-2 glow-card rounded-full text-[10px] font-bold tracking-[0.4em] uppercase text-blue-400"
+                        >
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-neon-blue"></span>
+                            <span>Radiant Merit System</span>
+                        </motion.div>
+                    </div>
                     
                     <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase">
                         Global<br/>Leaderboard

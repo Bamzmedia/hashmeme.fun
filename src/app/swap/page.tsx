@@ -11,6 +11,7 @@ import BackgroundMesh from '@/components/effects/BackgroundMesh';
 import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
 import { useSearchParams } from 'next/navigation';
 import { MirrorNodeService } from '@/services/MirrorNodeService';
+import BackButton from '@/components/BackButton';
 
 interface TokenOption {
     id: string;
@@ -225,7 +226,10 @@ function SwapContent() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto w-full flex-grow flex items-center justify-center pt-48 pb-32 px-6 relative z-10">
+            <div className="max-w-7xl mx-auto w-full flex-grow flex flex-col items-center justify-center pt-48 pb-32 px-6 relative z-10">
+                <div className="w-full flex justify-start mb-12">
+                    <BackButton />
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 w-full h-full">
                     
                     {/* LEFT PANEL: ANALYTICS */}
