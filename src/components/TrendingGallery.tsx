@@ -7,7 +7,7 @@ export default function TrendingGallery() {
     const { tokens, loading, filter, setFilter } = useTrendingTokens('all');
 
     return (
-        <div className="w-full relative z-10">
+        <div id="market-gallery" className="w-full relative z-10">
             {/* Header with Filters */}
             <div className="flex flex-col md:flex-row justify-between items-end mb-10 border-b border-white/5 pb-6">
                 <div>
