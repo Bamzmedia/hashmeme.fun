@@ -125,13 +125,16 @@ export default function DashboardPage() {
             </nav>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-20 gap-8 pt-10">
-            <div className="flex items-center space-x-6">
-                <div className="p-1 rounded-sm border border-blue-500 rotate-45 flex items-center justify-center">
-                    <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
-                </div>
-                <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tighter glow-text">GlowLaunch v3.0</h1>
-                    <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-1">Foundational Asset Genesis</p>
+            <div className="flex items-center space-x-10">
+                <BackButton />
+                <div className="flex items-center space-x-6">
+                    <div className="p-1 rounded-sm border border-blue-500 rotate-45 flex items-center justify-center">
+                        <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-500 shadow-neon-blue"></div>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-black uppercase tracking-tighter glow-text">GlowLaunch v3.0</h1>
+                        <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-1">Foundational Asset Genesis</p>
+                    </div>
                 </div>
             </div>
 
