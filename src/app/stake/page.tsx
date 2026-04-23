@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useHederaAccount } from '@/hooks/useHederaAccount';
+import { useWallet } from '@/context/WalletContext';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import BackButton from '@/components/BackButton';
 import BackgroundMesh from '@/components/effects/BackgroundMesh';
@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 export default function StakePage() {
-    const { accountId, isConnected } = useHederaAccount();
+    const { accountId, isConnected } = useWallet();
     const [stakeAmount, setStakeAmount] = useState<string>('');
     const [stakedBalance, setStakedBalance] = useState<string>('0');
     const [pendingRewards, setPendingRewards] = useState<string>('0.00');
