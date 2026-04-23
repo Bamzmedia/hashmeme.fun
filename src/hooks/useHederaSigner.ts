@@ -52,21 +52,33 @@ export function useHederaSigner() {
             const sessionTopic = provider?.session?.topic || provider?.signer?.session?.topic;
 
             if (signClient && sessionTopic) {
-                console.log("Routing via native SignClient...");
+                console.log("Routing via native SignClient for topic:", sessionTopic);
                 
-                // Inject namespace if missing
+                // FORCE Inject / Update namespaces
                 try {
                    const session = signClient.session.get(sessionTopic);
-                   if (session && !session.namespaces['hedera']) {
-                       session.namespaces['hedera'] = {
-                           accounts: [`hedera:${network}:${hederaId}`],
-                           methods: ['hedera_signAndExecuteTransaction', 'hedera_signTransaction', 'hedera_executeTransaction', 'hedera_signMessage'],
-                           events: ['chainChanged', 'accountsChanged']
-                       };
+                   if (session) {
+                       const hNamespace = session.namespaces['hedera'] || { accounts: [], methods: [], events: [] };
+                       
+                       // Ensure all methods are registered
+                       const requiredMethods = ['hedera_signAndExecuteTransaction', 'hedera_signTransaction', 'hedera_executeTransaction', 'hedera_signMessage'];
+                       const missingMethods = requiredMethods.filter(m => !hNamespace.methods.includes(m));
+                       
+                       if (missingMethods.length > 0 || hNamespace.accounts.length === 0) {
+                           console.log("Injecting missing Hedera methods/accounts into session...");
+                           session.namespaces['hedera'] = {
+                               accounts: [...new Set([...hNamespace.accounts, `hedera:${network}:${hederaId}`])],
+                               methods: [...new Set([...hNamespace.methods, ...requiredMethods])],
+                               events: [...new Set([...hNamespace.events, 'chainChanged', 'accountsChanged'])]
+                           };
+                       }
                    }
-                } catch (e) { /* silent fail */ }
+                } catch (e) { 
+                    console.error("Namespace injection error:", e);
+                }
 
                 try {
+                    console.log("Attempting hedera_signAndExecuteTransaction...");
                     return await signClient.request({
                         topic: sessionTopic,
                         chainId: `hedera:${network}`,
@@ -76,8 +88,9 @@ export function useHederaSigner() {
                         }
                     });
                 } catch (rpcError: any) {
+                    console.warn("signAndExecute failed:", rpcError.message);
                     if (rpcError.message?.includes("Unsupported method") || rpcError.code === -32601) {
-                        console.warn("signAndExecute unsupported, falling back to sign-then-execute...");
+                        console.log("Falling back to hedera_signTransaction...");
                         const signedResponse = await signClient.request({
                             topic: sessionTopic,
                             chainId: `hedera:${network}`,
@@ -86,7 +99,10 @@ export function useHederaSigner() {
                                 params: { signerAccountId: hip30Id, transactionList: txBase64 }
                             }
                         });
+                        
                         const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                        
+                        console.log("Executing signed transaction...");
                         return await signClient.request({
                             topic: sessionTopic,
                             chainId: `hedera:${network}`,
