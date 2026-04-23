@@ -12,6 +12,7 @@ interface WalletState {
     isConnected: boolean;
     isPairing: boolean;
     isInitializing: boolean;
+    error: string | null;
     connect: () => void;
     disconnect: () => void;
     executeTransaction: (transaction: any) => Promise<any>;
@@ -22,6 +23,7 @@ const WalletContext = createContext<WalletState>({
     isConnected: false,
     isPairing: false,
     isInitializing: true,
+    error: null,
     connect: () => {},
     disconnect: () => {},
     executeTransaction: async () => { throw new Error('Wallet not connected'); }
@@ -32,15 +34,15 @@ export const useWallet = () => useContext(WalletContext);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 const APP_METADATA = {
-    name: 'GlowSwap Protocol',
-    description: 'Institutional-grade DeFi & Meme Launchpad on Hedera',
+    name: 'GlowSwap',
+    description: 'Hedera Meme Launchpad',
     icon: 'https://glowswap.vercel.app/logo.png',
     url: 'https://glowswap.vercel.app'
 };
 
-const NETWORK = (process.env.NEXT_PUBLIC_HEDERA_NETWORK || 'testnet') as 'mainnet' | 'testnet';
-const STORAGE_KEY_ACCOUNT = 'glow_hc_account';
-const STORAGE_KEY_TOPIC = 'glow_hc_topic';
+const NETWORK = (process.env.NEXT_PUBLIC_HEDERA_NETWORK || 'testnet').toLowerCase();
+const STORAGE_KEY_ACCOUNT = 'glow_hc_account_v3';
+const STORAGE_KEY_TOPIC = 'glow_hc_topic_v3';
 
 export function WalletProvider({ children }: { children: ReactNode }) {
     const [hc, setHc] = useState<any>(null);
@@ -48,22 +50,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [isConnected, setIsConnected] = useState(false);
     const [isPairing, setIsPairing] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
-    const [topic, setTopic] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // ── Initialise HashConnect 3.0 ──────────────────────────────────────────
     useEffect(() => {
         let mounted = true;
 
-        const initHashConnect = async () => {
+        const init = async () => {
             try {
-                console.log("Initializing HashConnect 3.0...");
                 const { HashConnect } = await import('hashconnect');
-                const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'glowswap-project';
-                const instance = new HashConnect(NETWORK, projectId, APP_METADATA, true);
+                
+                // Use the provided WC project ID or a fallback
+                // NOTE: WalletConnect v2 IDs must be valid. If missing, we use a placeholder.
+                const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '3ee917f6510a7673574c8035174c8035'; 
+                
+                console.log(`[HashConnect] Initializing for ${NETWORK} with project ${projectId}...`);
+                
+                const instance = new HashConnect(NETWORK as any, projectId, APP_METADATA, true);
 
-                // Listen for pairing approvals
                 instance.pairingEvent.on((data: any) => {
-                    console.log("Pairing Event Data:", data);
+                    console.log("[HashConnect] Pairing approved:", data);
                     if (!mounted) return;
                     const acc = data.accountIds?.[0];
                     if (acc) {
@@ -75,86 +80,72 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                     }
                 });
 
-                // Listen for connection status
-                instance.connectionStatusChangeEvent.on((status: string) => {
-                    console.log("Connection Status Change:", status);
+                instance.disconnectionEvent.on((data: any) => {
+                    console.log("[HashConnect] Disconnected:", data);
                     if (!mounted) return;
-                    if (status === 'Disconnected') {
-                        setIsConnected(false);
-                        setAccountId(null);
-                    }
+                    setIsConnected(false);
+                    setAccountId(null);
                 });
 
-                // Initialize internal state
-                // In HC 3.x, we usually call instance.init()
-                const initData = await instance.init();
-                console.log("HashConnect Initialized:", initData);
+                // Set a timeout for init() so we don't hang forever
+                const initPromise = instance.init();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("HashConnect initialization timed out")), 8000)
+                );
+
+                await Promise.race([initPromise, timeoutPromise]);
+                console.log("[HashConnect] Init successful");
 
                 if (!mounted) return;
 
-                // Try to reconnect if saved
+                // Restore session
                 const savedAccount = localStorage.getItem(STORAGE_KEY_ACCOUNT);
-                const savedTopic = localStorage.getItem(STORAGE_KEY_TOPIC);
-
-                if (savedAccount && savedTopic) {
-                    console.log("Attempting to restore session:", savedAccount);
-                    // In some cases we might need to verify session vitality
+                if (savedAccount) {
                     setAccountId(savedAccount);
-                    setTopic(savedTopic);
                     setIsConnected(true);
                 }
 
                 setHc(instance);
                 setIsInitializing(false);
-            } catch (err) {
-                console.error("HashConnect Init Error:", err);
-                if (mounted) setIsInitializing(false);
+            } catch (err: any) {
+                console.error("[HashConnect] Init failed:", err);
+                if (mounted) {
+                    setError(err.message);
+                    setIsInitializing(false);
+                }
             }
         };
 
-        if (typeof window !== 'undefined') {
-            initHashConnect();
-        }
-
+        init();
         return () => { mounted = false; };
     }, []);
 
     const connect = useCallback(() => {
-        if (!hc) {
-            console.warn("HashConnect not initialized yet.");
-            return;
-        }
-        
-        console.log("Connect button clicked. Opening pairing modal...");
+        if (!hc) return;
         setIsPairing(true);
-        // HashConnect 3.x uses openPairingModal() to show the QR code and extension detectors
-        hc.openPairingModal();
+        try {
+            hc.openPairingModal();
+        } catch (e) {
+            console.error("Modal failed to open:", e);
+            setIsPairing(false);
+        }
     }, [hc]);
 
     const disconnect = useCallback(async () => {
-        console.log("Disconnecting...");
         localStorage.removeItem(STORAGE_KEY_ACCOUNT);
         localStorage.removeItem(STORAGE_KEY_TOPIC);
         setAccountId(null);
         setIsConnected(false);
         if (hc) {
-            // Attempt to clear session
             try { await hc.disconnect(); } catch (e) {}
         }
     }, [hc]);
 
     const executeTransaction = useCallback(async (transaction: any) => {
-        if (!hc || !accountId) {
-            throw new Error('Wallet not connected. Please connect first.');
-        }
-
-        console.log("Executing Transaction...");
+        if (!hc || !accountId) throw new Error('Not connected');
         const signer = hc.getSigner();
-
         const frozen = await transaction.freezeWithSigner(signer);
-        const response = await frozen.executeWithSigner(signer);
-        console.log("Transaction Execution Response:", response);
-        return response;
+        return await frozen.executeWithSigner(signer);
     }, [hc, accountId]);
 
     return (
@@ -163,6 +154,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             isConnected,
             isPairing,
             isInitializing,
+            error,
             connect,
             disconnect,
             executeTransaction,
