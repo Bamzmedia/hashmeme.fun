@@ -27,7 +27,7 @@ const NETWORK = "testnet";
 const PROJECT_ID = "3ee917f6510a7673574c8035174c8035";
 
 const APP_METADATA = {
-    name: "GlowSwap Hub",
+    name: "GlowSwap Protocol",
     description: "Hedera Meme Launchpad",
     icons: ["https://glowswap.vercel.app/logo.png"],
     url: "https://glowswap.vercel.app"
@@ -40,55 +40,71 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const init = async () => {
             if (globalHC) return;
-            const { HashConnect } = await import('hashconnect');
-            const instance = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
+            try {
+                const { HashConnect } = await import('hashconnect');
+                const instance = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
+                
+                // CRITICAL: Set instance BEFORE init so it's ready for clicks
+                globalHC = instance;
 
-            instance.pairingEvent.on((data: any) => {
-                const acc = data.accountIds?.[0];
-                if (acc) {
-                    setAccountId(acc);
+                instance.pairingEvent.on((data: any) => {
+                    console.log("[HashConnect] Pairing success:", data);
+                    const acc = data.accountIds?.[0];
+                    if (acc) {
+                        setAccountId(acc);
+                        setIsConnected(true);
+                        localStorage.setItem('glow_v8_acc', acc);
+                    }
+                });
+
+                await instance.init();
+                console.log("[HashConnect] Initialization complete");
+
+                const saved = localStorage.getItem('glow_v8_acc');
+                if (saved) {
+                    setAccountId(saved);
                     setIsConnected(true);
-                    localStorage.setItem('glow_acc_v7', acc);
                 }
-            });
-
-            await instance.init();
-            globalHC = instance;
-
-            const saved = localStorage.getItem('glow_acc_v7');
-            if (saved) {
-                setAccountId(saved);
-                setIsConnected(true);
+            } catch (err) {
+                console.error("[HashConnect] Setup error:", err);
             }
         };
 
         if (typeof window !== 'undefined') init();
     }, []);
 
-    const connect = () => {
-        if (!globalHC) {
-            // Instant retry if not ready
-            import('hashconnect').then(async ({ HashConnect }) => {
-                globalHC = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
-                await globalHC.init();
-                globalHC.openPairingModal();
-            });
-            return;
-        }
+    const connect = async () => {
+        console.log("[Connect] Attempting to open wallet...");
         
-        // INSTANT 1-CLICK ACTION
+        if (!globalHC) {
+            // Emergent fallback
+            const { HashConnect } = await import('hashconnect');
+            globalHC = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
+            await globalHC.init();
+        }
+
         try {
+            // First, try the internal pairing modal
             globalHC.openPairingModal();
         } catch (e) {
-            console.error("Modal failed", e);
+            console.error("[Connect] Modal failed", e);
+            // Second, try direct extension call
+            try {
+                await globalHC.connectToExtension();
+            } catch (e2) {
+                // Third, show the setup instructions as an alert
+                alert("Please ensure HashPack is installed and click again. If you are on mobile, use the HashPack browser.");
+            }
         }
     };
 
     const disconnect = () => {
         setAccountId(null);
         setIsConnected(false);
-        localStorage.removeItem('glow_acc_v7');
-        if (globalHC) globalHC.disconnect();
+        localStorage.removeItem('glow_v8_acc');
+        if (globalHC) {
+            try { globalHC.disconnect(); } catch (e) {}
+        }
     };
 
     const executeTransaction = async (transaction: any) => {
