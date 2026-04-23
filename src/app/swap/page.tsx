@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useHederaAccount } from '@/hooks/useHederaAccount';
-import { useHederaSigner } from '@/hooks/useHederaSigner';
+import { useWallet } from '@/context/WalletContext';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import { useSaucerSwapQuote } from '@/hooks/useSaucerSwapQuote';
 import Link from 'next/link';
@@ -90,8 +89,7 @@ function FluxChart() {
 }
 
 function SwapContent() {
-    const { accountId, isConnected } = useHederaAccount();
-    const { signer } = useHederaSigner();
+    const { accountId, isConnected, executeTransaction } = useWallet();
     const searchParams = useSearchParams();
     
     // State
@@ -132,7 +130,7 @@ function SwapContent() {
     const { expectedOutput, loading } = useSaucerSwapQuote(hbarAmount, slippage, "HBAR", targetTokenId);
 
     const associateToken = async () => {
-        if (!signer || !accountId) return;
+        if (!isConnected || !accountId) return;
         setLoadingAction(true);
         setStatus(`Associating ${selectedToken.symbol} with your Radiant Identity...`);
         try {
@@ -141,7 +139,7 @@ function SwapContent() {
                 .setAccountId(AccountId.fromString(accountId))
                 .setTokenIds([selectedToken.id]);
             
-            await signer.executeTransaction(transaction);
+            await executeTransaction(transaction);
             setIsAssociated(true);
             setStatus(`Success! ${selectedToken.symbol} is now associated.`);
         } catch (e: any) {
@@ -152,7 +150,7 @@ function SwapContent() {
     };
 
     const executeAtomicSwap = async () => {
-        if (!isConnected || !accountId || !signer) {
+        if (!isConnected || !accountId) {
             setStatus("Please connect your wallet to proceed.");
             return;
         }
@@ -171,7 +169,7 @@ function SwapContent() {
                 .addTokenTransfer(TokenId.fromString(selectedToken.id), protocolPoolId, -tokenAmountRaw)
                 .addTokenTransfer(TokenId.fromString(selectedToken.id), accountId, tokenAmountRaw);
 
-            await signer.executeTransaction(transaction);
+            await executeTransaction(transaction);
             triggerSuccessConfetti();
             
             setStatus(`Atomic Swap Successful: Received ${expectedOutput} ${selectedToken.symbol}.`);
