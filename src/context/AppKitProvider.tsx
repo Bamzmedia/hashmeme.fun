@@ -51,23 +51,7 @@ createAppKit({
     featuredWalletIds: [
         'bf33f7f2057d4a37bffbc1ca37599026', // HashPack
         '22515b7c7b744d0a80e698380e227092'  // Blade
-    ],
-    // Ensure Hedera-specific JSON-RPC methods are enabled
-    ...({
-        optionalNamespaces: {
-            hedera: {
-                methods: [
-                    'hedera_signAndExecuteTransaction',
-                    'hedera_signTransaction',
-                    'hedera_executeTransaction',
-                    'hedera_signAndReturnTransaction',
-                    'hedera_signMessage'
-                ],
-                chains: ['hedera:mainnet', 'hedera:testnet'],
-                events: ['chainChanged', 'accountsChanged']
-            }
-        }
-    } as any)
+    ]
 });
 
 export const AppKitProvider = ({ children }: { children: ReactNode }) => {
