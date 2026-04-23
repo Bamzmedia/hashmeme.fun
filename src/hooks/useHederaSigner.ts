@@ -2,7 +2,18 @@
 
 import { useAccount } from 'wagmi';
 import { useEffect, useState, useCallback } from 'react';
-import { transactionToBase64String } from '@hashgraph/hedera-wallet-connect';
+
+/**
+ * Robust utility to convert Uint8Array to Base64 in a browser environment.
+ */
+function bytesToBase64(bytes: Uint8Array): string {
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
 
 /**
  * Hook to bridge the Wagmi/AppKit connector to the Hedera WalletConnect v2 RPC protocol.
@@ -34,8 +45,9 @@ export function useHederaSigner() {
                 transaction.freeze();
             }
 
-            // 3. Serialize to Base64 using official @hashgraph/hedera-wallet-connect utility
-            const txBase64 = transactionToBase64String(transaction);
+            // 3. Serialize to Base64 using robust browser utility
+            const txBytes = transaction.toBytes();
+            const txBase64 = bytesToBase64(txBytes);
 
             const hip30Id = `hedera:${network}:${hederaId}`;
 
