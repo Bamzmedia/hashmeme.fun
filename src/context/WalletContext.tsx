@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * WalletContext.tsx
- * Clean HashConnect-only wallet connection for Hedera.
- * No WalletConnect. No AppKit. No EVM namespace conflicts.
- */
-
 import React, {
     createContext, useContext, useState,
     useEffect, useCallback, ReactNode
@@ -17,19 +11,17 @@ interface WalletState {
     accountId: string | null;
     isConnected: boolean;
     isPairing: boolean;
-    pairingString: string | null;
+    isInitializing: boolean;
     connect: () => void;
     disconnect: () => void;
     executeTransaction: (transaction: any) => Promise<any>;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const WalletContext = createContext<WalletState>({
     accountId: null,
     isConnected: false,
     isPairing: false,
-    pairingString: null,
+    isInitializing: true,
     connect: () => {},
     disconnect: () => {},
     executeTransaction: async () => { throw new Error('Wallet not connected'); }
@@ -55,104 +47,121 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [accountId, setAccountId] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [isPairing, setIsPairing] = useState(false);
-    const [pairingString, setPairingString] = useState<string | null>(null);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [topic, setTopic] = useState<string | null>(null);
 
-    // ── Initialise HashConnect (browser only) ───────────────────────────────
+    // ── Initialise HashConnect 3.0 ──────────────────────────────────────────
     useEffect(() => {
         let mounted = true;
 
-        (async () => {
-            const { HashConnect } = await import('hashconnect');
-            const instance = new HashConnect(false);
+        const initHashConnect = async () => {
+            try {
+                console.log("Initializing HashConnect 3.0...");
+                const { HashConnect } = await import('hashconnect');
+                const instance = new HashConnect(NETWORK, process.env.NEXT_PUBLIC_PROJECT_ID || 'glowswap-project', APP_METADATA, true);
 
-            // Fired when a wallet approves the pairing
-            instance.pairingEvent.on((data: any) => {
+                // Listen for pairing approvals
+                instance.pairingEvent.on((data: any) => {
+                    console.log("Pairing Event Data:", data);
+                    if (!mounted) return;
+                    const acc = data.accountIds?.[0];
+                    if (acc) {
+                        setAccountId(acc);
+                        setIsConnected(true);
+                        setIsPairing(false);
+                        localStorage.setItem(STORAGE_KEY_ACCOUNT, acc);
+                        localStorage.setItem(STORAGE_KEY_TOPIC, data.topic);
+                    }
+                });
+
+                // Listen for connection status
+                instance.connectionStatusChangeEvent.on((status: string) => {
+                    console.log("Connection Status Change:", status);
+                    if (!mounted) return;
+                    if (status === 'Disconnected') {
+                        setIsConnected(false);
+                        setAccountId(null);
+                    }
+                });
+
+                // Initialize internal state
+                // In HC 3.x, we usually call instance.init()
+                const initData = await instance.init();
+                console.log("HashConnect Initialized:", initData);
+
                 if (!mounted) return;
-                const acc = data.accountIds?.[0];
-                if (acc) {
-                    setAccountId(acc);
+
+                // Try to reconnect if saved
+                const savedAccount = localStorage.getItem(STORAGE_KEY_ACCOUNT);
+                const savedTopic = localStorage.getItem(STORAGE_KEY_TOPIC);
+
+                if (savedAccount && savedTopic) {
+                    console.log("Attempting to restore session:", savedAccount);
+                    // In some cases we might need to verify session vitality
+                    setAccountId(savedAccount);
+                    setTopic(savedTopic);
                     setIsConnected(true);
-                    setIsPairing(false);
-                    setPairingString(null);
-                    localStorage.setItem(STORAGE_KEY_ACCOUNT, acc);
-                    localStorage.setItem(STORAGE_KEY_TOPIC, data.topic);
-                    // Also store for legacy hooks
-                    localStorage.setItem('glowswap_last_account_id', acc);
                 }
-            });
 
-            // Fired on disconnect
-            instance.connectionStatusChangeEvent.on((status: string) => {
-                if (!mounted) return;
-                if (status === 'Disconnected') {
-                    setIsConnected(false);
-                    setAccountId(null);
-                }
-            });
-
-            // Init – returns topic & pairingString
-            const initData = await instance.init(APP_METADATA, NETWORK, false);
-
-            if (!mounted) return;
-
-            // Restore previous session
-            const savedAccount = localStorage.getItem(STORAGE_KEY_ACCOUNT);
-            const savedTopic = localStorage.getItem(STORAGE_KEY_TOPIC);
-
-            if (savedAccount && savedTopic) {
-                setAccountId(savedAccount);
-                setTopic(savedTopic);
-                setIsConnected(true);
-            } else {
-                setTopic(initData.topic);
-                setPairingString(initData.pairingString);
+                setHc(instance);
+                setIsInitializing(false);
+            } catch (err) {
+                console.error("HashConnect Init Error:", err);
+                if (mounted) setIsInitializing(false);
             }
+        };
 
-            setHc(instance);
-        })();
+        if (typeof window !== 'undefined') {
+            initHashConnect();
+        }
 
         return () => { mounted = false; };
     }, []);
 
-    // ── Connect: opens HashPack / Blade pairing dialog ─────────────────────
     const connect = useCallback(() => {
-        if (!hc || !pairingString) return;
+        if (!hc) {
+            console.warn("HashConnect not initialized yet.");
+            return;
+        }
+        
+        console.log("Connect button clicked. Opening pairing modal...");
         setIsPairing(true);
-        hc.connectToLocalWallet(pairingString);
-    }, [hc, pairingString]);
+        // HashConnect 3.x uses openPairingModal() to show the QR code and extension detectors
+        hc.openPairingModal();
+    }, [hc]);
 
-    // ── Disconnect ──────────────────────────────────────────────────────────
-    const disconnect = useCallback(() => {
+    const disconnect = useCallback(async () => {
+        console.log("Disconnecting...");
         localStorage.removeItem(STORAGE_KEY_ACCOUNT);
         localStorage.removeItem(STORAGE_KEY_TOPIC);
-        localStorage.removeItem('glowswap_last_account_id');
         setAccountId(null);
         setIsConnected(false);
-        setPairingString(null);
-    }, []);
+        if (hc) {
+            // Attempt to clear session
+            try { await hc.disconnect(); } catch (e) {}
+        }
+    }, [hc]);
 
-    // ── Execute a Hedera transaction (native – no WalletConnect) ────────────
     const executeTransaction = useCallback(async (transaction: any) => {
-        if (!hc || !accountId || !topic) {
+        if (!hc || !accountId) {
             throw new Error('Wallet not connected. Please connect first.');
         }
 
-        const provider = hc.getProvider(NETWORK, topic, accountId);
-        const signer = hc.getSigner(provider);
+        console.log("Executing Transaction...");
+        const signer = hc.getSigner();
 
-        // freezeWithSigner sets the node IDs, payer, and tx ID automatically
         const frozen = await transaction.freezeWithSigner(signer);
         const response = await frozen.executeWithSigner(signer);
+        console.log("Transaction Execution Response:", response);
         return response;
-    }, [hc, accountId, topic]);
+    }, [hc, accountId]);
 
     return (
         <WalletContext.Provider value={{
             accountId,
             isConnected,
             isPairing,
-            pairingString,
+            isInitializing,
             connect,
             disconnect,
             executeTransaction,

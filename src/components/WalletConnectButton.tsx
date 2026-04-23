@@ -3,11 +3,22 @@
 import { useWallet } from '@/context/WalletContext';
 
 export default function WalletConnectButton() {
-    const { accountId, isConnected, isPairing, connect, disconnect } = useWallet();
+    const { accountId, isConnected, isPairing, isInitializing, connect, disconnect } = useWallet();
 
     const shortId = accountId
         ? accountId.length > 12 ? `${accountId.slice(0, 8)}...${accountId.slice(-4)}` : accountId
         : null;
+
+    if (isInitializing) {
+        return (
+            <button
+                disabled
+                className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-white/5 text-white/20 border border-white/5 animate-pulse"
+            >
+                Initializing Ledger...
+            </button>
+        );
+    }
 
     if (isConnected && accountId) {
         return (
@@ -31,7 +42,7 @@ export default function WalletConnectButton() {
             disabled={isPairing}
             className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] disabled:opacity-50"
         >
-            {isPairing ? 'Waiting for wallet...' : 'Connect Wallet'}
+            {isPairing ? 'Opening Link...' : 'Connect Wallet'}
         </button>
     );
 }
