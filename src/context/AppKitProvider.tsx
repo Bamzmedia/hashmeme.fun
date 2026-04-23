@@ -23,15 +23,15 @@ const wagmiAdapter = new WagmiAdapter({
     ssr: true
 });
 
-// Metadata for the dApp
+// 1. Fully Populated Metadata
 const metadata = {
     name: "GlowSwap Protocol",
-    description: "The Radiant Hub for Hedera Memes & Staking",
+    description: "Institutional-grade DeFi & Meme Launchpad on Hedera",
     url: "https://glowswap.vercel.app",
-    icons: ["https://glowswap.vercel.app/logo.png"]
+    icons: ["https://glowswap.vercel.app/favicon.ico", "https://glowswap.vercel.app/logo.png"]
 };
 
-// 5. Create AppKit with Hedera Focus
+// 2. Optimized AppKit Initialization for Hedera
 createAppKit({
     adapters: [wagmiAdapter],
     networks: [hedera, hederaTestnet],
@@ -39,19 +39,33 @@ createAppKit({
     metadata,
     features: {
         analytics: true,
-        email: true,
-        socials: ['google', 'x', 'apple', 'discord'],
+        email: false, // Disabled for cleaner Hedera modal
+        socials: [], // Standardize for Ledger focus
     },
     themeMode: 'dark',
     themeVariables: {
-        '--w3m-accent': '#3b82f6', // Blue-500
-        '--w3m-border-radius-master': '20px',
+        '--w3m-accent': '#3b82f6',
+        '--w3m-border-radius-master': '18px',
     },
-    // Feature Hedera wallets: HashPack and Blade
+    // Featured Hedera Wallets
     featuredWalletIds: [
         'bf33f7f2057d4a37bffbc1ca37599026', // HashPack
         '22515b7c7b744d0a80e698380e227092'  // Blade
-    ]
+    ],
+    // 3. Precision Hedera Namespace Bridge
+    ...({
+        optionalNamespaces: {
+            hedera: {
+                methods: [
+                    'hedera_signAndExecuteTransaction',
+                    'hedera_signTransaction',
+                    'hedera_signMessage'
+                ],
+                chains: ['hedera:mainnet', 'hedera:testnet'],
+                events: ['chainChanged', 'accountsChanged']
+            }
+        }
+    } as any)
 });
 
 export const AppKitProvider = ({ children }: { children: ReactNode }) => {
