@@ -1,35 +1,37 @@
 'use client';
 
-import { useAppKit } from '@reown/appkit/react';
-import { useDisconnect } from 'wagmi';
-import { useHederaAccount } from '../hooks/useHederaAccount';
+import { useWallet } from '@/context/WalletContext';
 
 export default function WalletConnectButton() {
-  const { open } = useAppKit();
-  const { disconnect } = useDisconnect();
-  const { accountId, isConnected, isResolving } = useHederaAccount();
+    const { accountId, isConnected, isPairing, connect, disconnect } = useWallet();
 
-  const formatAccountId = (id: string) => {
-    return `${id.slice(0, 6)}...${id.slice(-4)}`;
-  };
+    const shortId = accountId
+        ? accountId.length > 12 ? `${accountId.slice(0, 8)}...${accountId.slice(-4)}` : accountId
+        : null;
 
-  if (isConnected) {
+    if (isConnected && accountId) {
+        return (
+            <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full">
+                    {shortId}
+                </span>
+                <button
+                    onClick={disconnect}
+                    className="px-4 py-2 text-xs rounded-full font-semibold text-white/40 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all"
+                >
+                    Disconnect
+                </button>
+            </div>
+        );
+    }
+
     return (
-      <button 
-        onClick={() => open()}
-        className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-      >
-        {isResolving ? 'Resolving...' : (accountId || 'Connected')}
-      </button>
+        <button
+            onClick={connect}
+            disabled={isPairing}
+            className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] disabled:opacity-50"
+        >
+            {isPairing ? 'Waiting for wallet...' : 'Connect Wallet'}
+        </button>
     );
-  }
-
-  return (
-    <button 
-      onClick={() => open()}
-      className="px-6 py-2 rounded-full font-semibold text-sm transition-all duration-300 bg-indigo-600 text-white hover:bg-indigo-500 border border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)]"
-    >
-      Connect Wallet
-    </button>
-  );
 }

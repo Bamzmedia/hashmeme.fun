@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useHederaAccount } from '@/hooks/useHederaAccount';
-import { useHashConnect } from '@/context/HashConnectProvider';
+import { useWallet } from '@/context/WalletContext';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import BackButton from '@/components/BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,11 +12,7 @@ import { triggerSuccessConfetti } from '@/components/effects/ConfettiManager';
 const FORM_STORAGE_KEY = 'glowlaunch_v3_mission_control';
 
 export default function DashboardPage() {
-  const { accountId: hcAccountId, isConnected: hcConnected, sendTransaction } = useHashConnect();
-  const { accountId: wagmiAccountId } = useHederaAccount();
-  // Prefer HashConnect account, fall back to Wagmi EVM account
-  const accountId = hcAccountId || wagmiAccountId;
-  const isConnected = hcConnected;
+  const { accountId, isConnected, executeTransaction } = useWallet();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -105,7 +100,7 @@ export default function DashboardPage() {
 
         // 2. Execute via native HashConnect (bypasses WalletConnect EVM restrictions)
         setStatus("Awaiting HashPack Approval...");
-        const response = await sendTransaction(transaction as any);
+        const response = await executeTransaction(transaction);
         
         console.log("Launch Consensus Reached:", response);
 
