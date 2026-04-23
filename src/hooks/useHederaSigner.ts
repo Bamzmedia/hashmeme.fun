@@ -63,6 +63,27 @@ export function useHederaSigner() {
 
             if (signClient && sessionTopic) {
                 console.log("Using deep WalletConnect SignClient routing...");
+                
+                // FORCE INJECT HEDERA NAMESPACE to bypass Wagmi/AppKit EVM strict constraints
+                try {
+                    const activeSession = signClient.session.get(sessionTopic);
+                    if (activeSession && !activeSession.namespaces['hedera']) {
+                        console.log("Injecting Hedera namespace into active EVM session...");
+                        activeSession.namespaces['hedera'] = {
+                            accounts: [`hedera:${network}:${hederaId}`],
+                            methods: [
+                                'hedera_signAndExecuteTransaction',
+                                'hedera_signTransaction',
+                                'hedera_executeTransaction',
+                                'hedera_signMessage'
+                            ],
+                            events: ['chainChanged', 'accountsChanged']
+                        };
+                    }
+                } catch (injectionError) {
+                    console.warn("Failed to inject namespace, continuing anyway...", injectionError);
+                }
+
                 try {
                     const response = await signClient.request({
                         topic: sessionTopic,
