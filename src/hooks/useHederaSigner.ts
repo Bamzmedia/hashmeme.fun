@@ -67,7 +67,7 @@ export function useHederaSigner() {
                        if (missingMethods.length > 0 || hNamespace.accounts.length === 0) {
                            console.log("Injecting missing Hedera methods/accounts into session...");
                            session.namespaces['hedera'] = {
-                               accounts: [...new Set([...hNamespace.accounts, `hedera:${network}:${hederaId}`])],
+                               accounts: [...new Set([...hNamespace.accounts, `hedera:${network === 'mainnet' ? '295' : '296'}:${hederaId}`])],
                                methods: [...new Set([...hNamespace.methods, ...requiredMethods])],
                                events: [...new Set([...hNamespace.events, 'chainChanged', 'accountsChanged'])]
                            };
@@ -77,38 +77,53 @@ export function useHederaSigner() {
                     console.error("Namespace injection error:", e);
                 }
 
+                const caipChainId = `hedera:${network === 'mainnet' ? '295' : '296'}`;
+                const caipAccountId = `${caipChainId}:${hederaId}`;
+
                 try {
-                    console.log("Attempting hedera_signAndExecuteTransaction...");
+                    console.log(`Attempting hedera_signAndExecuteTransaction on ${caipChainId}...`);
                     return await signClient.request({
                         topic: sessionTopic,
-                        chainId: `hedera:${network}`,
+                        chainId: caipChainId,
                         request: {
                             method: 'hedera_signAndExecuteTransaction',
-                            params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                            params: { 
+                                signerAccountId: caipAccountId, 
+                                transactionList: txBase64,
+                                transactionBody: txBase64
+                            }
                         }
                     });
                 } catch (rpcError: any) {
                     console.warn("signAndExecute failed:", rpcError.message);
                     if (rpcError.message?.includes("Unsupported method") || rpcError.code === -32601) {
-                        console.log("Falling back to hedera_signTransaction...");
+                        console.log("Falling back to hedera_signTransaction (Resilient)...");
                         const signedResponse = await signClient.request({
                             topic: sessionTopic,
-                            chainId: `hedera:${network}`,
+                            chainId: caipChainId,
                             request: {
                                 method: 'hedera_signTransaction',
-                                params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                                params: { 
+                                    signerAccountId: caipAccountId, 
+                                    transactionList: txBase64,
+                                    transactionBody: txBase64 
+                                }
                             }
                         });
                         
-                        const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                        const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse.transactionBody || signedResponse;
                         
                         console.log("Executing signed transaction...");
                         return await signClient.request({
                             topic: sessionTopic,
-                            chainId: `hedera:${network}`,
+                            chainId: caipChainId,
                             request: {
                                 method: 'hedera_executeTransaction',
-                                params: { signerAccountId: hip30Id, transactionList: signedTx }
+                                params: { 
+                                    signerAccountId: caipAccountId, 
+                                    transactionList: signedTx,
+                                    transactionBody: signedTx 
+                                }
                             }
                         });
                     }
@@ -116,22 +131,37 @@ export function useHederaSigner() {
                 }
             }
 
-            // Standard provider fallback with resilient retry
+            const caipChainId = `hedera:${network === 'mainnet' ? '295' : '296'}`;
+            const caipAccountId = `${caipChainId}:${hederaId}`;
+
+            // Standard provider fallback
             try {
                 return await provider.request({
                     method: 'hedera_signAndExecuteTransaction',
-                    params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                    params: { 
+                        signerAccountId: caipAccountId, 
+                        transactionList: txBase64,
+                        transactionBody: txBase64 
+                    }
                 });
             } catch (rpcError: any) {
                 if (rpcError.message?.includes("Unsupported method") || rpcError.code === -32601) {
                     const signedResponse = await provider.request({
                         method: 'hedera_signTransaction',
-                        params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                        params: { 
+                            signerAccountId: caipAccountId, 
+                            transactionList: txBase64,
+                            transactionBody: txBase64 
+                        }
                     });
-                    const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                    const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse.transactionBody || signedResponse;
                     return await provider.request({
                         method: 'hedera_executeTransaction',
-                        params: { signerAccountId: hip30Id, transactionList: signedTx }
+                        params: { 
+                            signerAccountId: caipAccountId, 
+                            transactionList: signedTx,
+                            transactionBody: signedTx 
+                        }
                     });
                 }
                 throw rpcError;
