@@ -1,10 +1,12 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
-import { AccountId, Transaction } from '@hashgraph/sdk';
 
-const APP_META: HashConnectTypes.AppMetadata = {
+// Lazy-load HashConnect types
+type HashConnect = any;
+type MessageTypes_TransactionResponse = any;
+
+const APP_META = {
     name: "GlowSwap Protocol",
     description: "Institutional-grade DeFi & Meme Launchpad on Hedera",
     icon: "https://glowswap.vercel.app/logo.png",
@@ -12,7 +14,6 @@ const APP_META: HashConnectTypes.AppMetadata = {
 };
 
 const NETWORK = (process.env.NEXT_PUBLIC_HEDERA_NETWORK as 'mainnet' | 'testnet') || 'testnet';
-const HC_DEBUG = false;
 
 interface HashConnectState {
     hashconnect: HashConnect | null;
@@ -23,7 +24,7 @@ interface HashConnectState {
     isPairing: boolean;
     connect: () => Promise<void>;
     disconnect: () => void;
-    sendTransaction: (transaction: Transaction) => Promise<MessageTypes.TransactionResponse>;
+    sendTransaction: (transaction: any) => Promise<MessageTypes_TransactionResponse>;
 }
 
 const HashConnectContext = createContext<HashConnectState>({
@@ -49,10 +50,12 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
     const [isPairing, setIsPairing] = useState(false);
 
     useEffect(() => {
+        // Dynamic import ensures this ONLY runs in the browser, not at SSR/build time
         const init = async () => {
-            const hashconnect = new HashConnect(HC_DEBUG);
+            const { HashConnect } = await import('hashconnect');
+            const hashconnect = new HashConnect(false);
 
-            hashconnect.pairingEvent.on((data) => {
+            hashconnect.pairingEvent.on((data: any) => {
                 const account = data.accountIds?.[0];
                 if (account) {
                     setAccountId(account);
@@ -64,7 +67,7 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
                 }
             });
 
-            hashconnect.connectionStatusChangeEvent.on((status) => {
+            hashconnect.connectionStatusChangeEvent.on((status: string) => {
                 if (status === 'Disconnected') {
                     setIsConnected(false);
                     setAccountId(null);
@@ -75,15 +78,14 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
             const savedTopic = localStorage.getItem('glowswap_hc_topic');
 
             const initData = await hashconnect.init(APP_META, NETWORK, false);
-            
+
             if (savedAccount && savedTopic) {
                 setAccountId(savedAccount);
                 setTopic(savedTopic);
                 setIsConnected(true);
             } else {
-                const { topic: newTopic, pairingString: ps } = initData;
-                setTopic(newTopic);
-                setPairingString(ps);
+                setTopic(initData.topic);
+                setPairingString(initData.pairingString);
             }
 
             setHc(hashconnect);
@@ -106,19 +108,18 @@ export const HashConnectProvider = ({ children }: { children: ReactNode }) => {
         setIsConnected(false);
     }, []);
 
-    const sendTransaction = useCallback(async (transaction: Transaction): Promise<MessageTypes.TransactionResponse> => {
+    const sendTransaction = useCallback(async (transaction: any): Promise<any> => {
         if (!hc || !accountId || !topic) {
-            throw new Error('HashConnect not connected.');
+            throw new Error('HashConnect not connected. Please connect your wallet first.');
         }
 
         const provider = hc.getProvider(NETWORK, topic, accountId);
         const signer = hc.getSigner(provider);
 
-        // Freeze the tx with the signer's account
         const frozenTx = await transaction.freezeWithSigner(signer);
         const response = await frozenTx.executeWithSigner(signer);
-        
-        return response as unknown as MessageTypes.TransactionResponse;
+
+        return response;
     }, [hc, accountId, topic]);
 
     return (
