@@ -58,7 +58,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             try {
                 console.log("Initializing HashConnect 3.0...");
                 const { HashConnect } = await import('hashconnect');
-                const instance = new HashConnect(NETWORK, process.env.NEXT_PUBLIC_PROJECT_ID || 'glowswap-project', APP_METADATA, true);
+                const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'glowswap-project';
+                const instance = new HashConnect(NETWORK, projectId, APP_METADATA, true);
 
                 // Listen for pairing approvals
                 instance.pairingEvent.on((data: any) => {
