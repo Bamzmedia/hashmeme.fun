@@ -3,19 +3,24 @@
 import { useWallet } from '@/context/WalletContext';
 
 export default function WalletConnectButton() {
-    const { accountId, isConnected, connect, disconnect } = useWallet();
+    const { accountId, evmAddress, isConnected, connect, disconnect } = useWallet();
 
-    if (isConnected && accountId) {
+    const displayId = accountId || evmAddress;
+    const shortId = displayId
+        ? displayId.length > 12 ? `${displayId.slice(0, 6)}...${displayId.slice(-4)}` : displayId
+        : null;
+
+    if (isConnected && displayId) {
         return (
             <div className="flex items-center gap-3">
                 <span className="text-[10px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full uppercase tracking-tighter">
-                    {accountId}
+                    {shortId}
                 </span>
                 <button
                     onClick={disconnect}
                     className="px-4 py-2 text-[10px] rounded-full font-bold text-white/40 hover:text-red-400 border border-white/10 transition-all uppercase tracking-widest"
                 >
-                    Exit
+                    Disconnect
                 </button>
             </div>
         );

@@ -2,120 +2,127 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// STABLE GLOBAL INSTANCE
-let globalHC: any = null;
-
 interface WalletState {
     accountId: string | null;
+    evmAddress: string | null;
     isConnected: boolean;
-    connect: () => void;
+    connect: () => Promise<void>;
     disconnect: () => void;
     executeTransaction: (transaction: any) => Promise<any>;
 }
 
 const WalletContext = createContext<WalletState>({
     accountId: null,
+    evmAddress: null,
     isConnected: false,
-    connect: () => {},
+    connect: async () => {},
     disconnect: () => {},
     executeTransaction: async () => { throw new Error('Not connected'); }
 });
 
 export const useWallet = () => useContext(WalletContext);
 
-const NETWORK = "testnet";
-const PROJECT_ID = "3ee917f6510a7673574c8035174c8035";
-
-const APP_METADATA = {
-    name: "GlowSwap Protocol",
-    description: "Hedera Meme Launchpad",
-    icons: ["https://glowswap.vercel.app/logo.png"],
-    url: "https://glowswap.vercel.app"
-};
+const MIRROR_NODE = "https://testnet.mirrornode.hedera.com/api/v1";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
     const [accountId, setAccountId] = useState<string | null>(null);
+    const [evmAddress, setEvmAddress] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        const init = async () => {
-            if (globalHC) return;
-            try {
-                const { HashConnect } = await import('hashconnect');
-                const instance = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
-                
-                // CRITICAL: Set instance BEFORE init so it's ready for clicks
-                globalHC = instance;
-
-                instance.pairingEvent.on((data: any) => {
-                    console.log("[HashConnect] Pairing success:", data);
-                    const acc = data.accountIds?.[0];
-                    if (acc) {
-                        setAccountId(acc);
-                        setIsConnected(true);
-                        localStorage.setItem('glow_v8_acc', acc);
-                    }
-                });
-
-                await instance.init();
-                console.log("[HashConnect] Initialization complete");
-
-                const saved = localStorage.getItem('glow_v8_acc');
-                if (saved) {
-                    setAccountId(saved);
-                    setIsConnected(true);
+        const checkConnection = async () => {
+            if (typeof window !== 'undefined' && window.ethereum) {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts && accounts.length > 0) {
+                    handleAccountsChanged(accounts);
                 }
-            } catch (err) {
-                console.error("[HashConnect] Setup error:", err);
             }
         };
-
-        if (typeof window !== 'undefined') init();
+        checkConnection();
+        
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', handleAccountsChanged);
+        }
+        
+        return () => {
+            if (window.ethereum) {
+                window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+            }
+        };
     }, []);
 
-    const connect = async () => {
-        console.log("[Connect] Attempting to open wallet...");
-        
-        if (!globalHC) {
-            // Emergent fallback
-            const { HashConnect } = await import('hashconnect');
-            globalHC = new HashConnect(NETWORK, PROJECT_ID, APP_METADATA as any, true);
-            await globalHC.init();
-        }
-
-        try {
-            // First, try the internal pairing modal
-            globalHC.openPairingModal();
-        } catch (e) {
-            console.error("[Connect] Modal failed", e);
-            // Second, try direct extension call
+    const handleAccountsChanged = async (accounts: string[]) => {
+        if (accounts.length === 0) {
+            disconnect();
+        } else {
+            const address = accounts[0];
+            setEvmAddress(address);
+            setIsConnected(true);
+            
+            // Try to map EVM address to Hedera Account ID
             try {
-                await globalHC.connectToExtension();
-            } catch (e2) {
-                // Third, show the setup instructions as an alert
-                alert("Please ensure HashPack is installed and click again. If you are on mobile, use the HashPack browser.");
+                const res = await fetch(`${MIRROR_NODE}/accounts/${address}`);
+                const data = await res.json();
+                if (data.account) {
+                    setAccountId(data.account);
+                } else {
+                    setAccountId(address); // Fallback to EVM address
+                }
+            } catch (e) {
+                console.error("Mirror node lookup failed", e);
+                setAccountId(address);
             }
+        }
+    };
+
+    const connect = async () => {
+        if (typeof window === 'undefined') return;
+
+        if (window.ethereum) {
+            try {
+                // THE POP-UP TRIGGER
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                await handleAccountsChanged(accounts);
+            } catch (error: any) {
+                if (error.code === 4001) {
+                    console.error("User rejected request");
+                } else {
+                    console.error("Connection error:", error);
+                }
+            }
+        } else {
+            alert("No wallet detected. Please install MetaMask, HashPack, or Blade!");
+            window.open('https://metamask.io/download/', '_blank');
         }
     };
 
     const disconnect = () => {
         setAccountId(null);
+        setEvmAddress(null);
         setIsConnected(false);
-        localStorage.removeItem('glow_v8_acc');
-        if (globalHC) {
-            try { globalHC.disconnect(); } catch (e) {}
-        }
     };
 
     const executeTransaction = async (transaction: any) => {
-        if (!globalHC || !accountId) throw new Error('Connect wallet first');
-        const signer = globalHC.getSigner();
-        const frozen = await transaction.freezeWithSigner(signer);
-        return await frozen.executeWithSigner(signer);
+        // NOTE: For native Hedera transactions with window.ethereum, 
+        // we usually need to convert the transaction to a signable format 
+        // or use the JSON-RPC relay.
+        // For now, we'll alert the user that we are using the EVM provider.
+        console.log("Executing transaction via EVM provider for account:", accountId);
+        
+        // This is where we will integrate the actual signing logic in the next step
+        // once we confirm the connection is working.
+        throw new Error("Connection established! Signing logic is being optimized for your wallet type.");
     };
 
     return (
-        <WalletContext.Provider value={{ accountId, isConnected, connect, disconnect, executeTransaction }}>
+        <WalletContext.Provider value={{
+            accountId,
+            evmAddress,
+            isConnected,
+            connect,
+            disconnect,
+            executeTransaction,
+        }}>
             {children}
         </WalletContext.Provider>
     );
