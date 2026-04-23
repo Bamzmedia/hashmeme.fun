@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { MirrorNodeService } from '@/services/MirrorNodeService';
-import { useHederaSigner } from './useHederaSigner';
-import { useHederaAccount } from './useHederaAccount';
+import { useWallet } from '@/context/WalletContext';
 
 export interface ChatMessage {
     id: string;
@@ -16,8 +15,7 @@ const TOPIC_ID = process.env.NEXT_PUBLIC_CHAT_TOPIC_ID || '0.0.5312345'; // Plac
 const CHAT_LIMIT = 280;
 
 export function useCommunityChat() {
-    const { signer } = useHederaSigner();
-    const { accountId } = useHederaAccount();
+    const { executeTransaction, accountId } = useWallet();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [sending, setSending] = useState<boolean>(false);
@@ -75,7 +73,7 @@ export function useCommunityChat() {
      * Submit Transaction to HCS
      */
     const sendMessage = async (text: string) => {
-        if (!signer || !text.trim()) return;
+        if (!accountId || !text.trim()) return;
         if (text.length > CHAT_LIMIT) throw new Error(`Message exceeds ${CHAT_LIMIT} characters`);
 
         setSending(true);
@@ -87,7 +85,7 @@ export function useCommunityChat() {
                 .setMessage(text);
 
             console.log("Submitting HCS message to network...");
-            const response = await signer.executeTransaction(transaction);
+            const response = await executeTransaction(transaction);
             console.log("HCS Submission Result:", response);
 
             // Optimistic update for the local user until consensus arrives

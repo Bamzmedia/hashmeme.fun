@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useCommunityChat } from '@/hooks/useCommunityChat';
-import { useHederaAccount } from '@/hooks/useHederaAccount';
+import { useWallet } from '@/context/WalletContext';
 
 export default function CommunityChat() {
     const { messages, loading, sending, sendMessage, chatLimit } = useCommunityChat();
-    const { accountId, isConnected } = useHederaAccount();
+    const { accountId, isConnected } = useWallet();
     const [inputText, setInputText] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
 
