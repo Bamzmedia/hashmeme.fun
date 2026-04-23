@@ -57,6 +57,55 @@ export function useHederaSigner() {
             
             const provider: any = await connector.getProvider();
 
+            // Try to extract the WalletConnect SignClient for deep Hedera-native RPC bypassing
+            const signClient = provider?.signer?.client || provider?.client;
+            const sessionTopic = provider?.session?.topic || provider?.signer?.session?.topic;
+
+            if (signClient && sessionTopic) {
+                console.log("Using deep WalletConnect SignClient routing...");
+                try {
+                    const response = await signClient.request({
+                        topic: sessionTopic,
+                        chainId: `hedera:${network}`,
+                        request: {
+                            method: 'hedera_signAndExecuteTransaction',
+                            params: {
+                                signerAccountId: hip30Id,
+                                transactionList: txBase64
+                            }
+                        }
+                    });
+                    return response;
+                } catch (wcError: any) {
+                    console.warn("SignClient signAndExecute failed, attempting legacy fallback...", wcError);
+                    const signedResponse: any = await signClient.request({
+                        topic: sessionTopic,
+                        chainId: `hedera:${network}`,
+                        request: {
+                            method: 'hedera_signTransaction',
+                            params: {
+                                signerAccountId: hip30Id,
+                                transactionList: txBase64
+                            }
+                        }
+                    });
+                    const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                    const executeResponse: any = await signClient.request({
+                        topic: sessionTopic,
+                        chainId: `hedera:${network}`,
+                        request: {
+                            method: 'hedera_executeTransaction',
+                            params: {
+                                signerAccountId: hip30Id,
+                                transactionList: signedTx
+                            }
+                        }
+                    });
+                    return executeResponse;
+                }
+            }
+
+            console.log("SignClient not found, using standard provider bridge...");
             try {
                 const response: any = await provider.request({
                     method: 'hedera_signAndExecuteTransaction',
