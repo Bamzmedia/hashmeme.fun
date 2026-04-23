@@ -58,9 +58,9 @@ createAppKit({
             hedera: {
                 methods: [
                     'hedera_signAndExecuteTransaction',
-                    'hedera_signAndReturnTransaction',
                     'hedera_signTransaction',
                     'hedera_executeTransaction',
+                    'hedera_signAndReturnTransaction',
                     'hedera_signMessage'
                 ],
                 chains: ['hedera:mainnet', 'hedera:testnet'],
