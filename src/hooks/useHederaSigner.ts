@@ -21,15 +21,14 @@ function bytesToBase64(bytes: Uint8Array): string {
  * Optimized for HashPack and Blade browser extensions.
  */
 export function useHederaSigner() {
-    const { isConnected, address, chain } = useAccount();
-    const { data: client } = useConnectorClient();
+    const { isConnected, address, chain, connector } = useAccount();
     const [signer, setSigner] = useState<any | null>(null);
 
     /**
      * Executes a Hedera Transaction using the connected WalletConnect session.
      */
     const executeTransaction = useCallback(async (transaction: any) => {
-        if (!client || !address) throw new Error("Wallet not connected");
+        if (!connector || !address) throw new Error("Wallet not connected");
 
         try {
             // 1. Resolve Hedera Identities and Network
@@ -56,8 +55,10 @@ export function useHederaSigner() {
             // 4. Trigger the Wallet Pop-up via RPC
             console.log(`Executing transaction for ${hip30Id} via native bridge...`);
             
+            const provider: any = await connector.getProvider();
+
             try {
-                const response: any = await (client as any).request({
+                const response: any = await provider.request({
                     method: 'hedera_signAndExecuteTransaction',
                     params: {
                         signerAccountId: hip30Id,
@@ -68,7 +69,7 @@ export function useHederaSigner() {
             } catch (rpcError: any) {
                 console.warn("Unified signAndExecute failed, attempting legacy fallback...", rpcError);
                 // Fallback sequence: Sign then Execute
-                const signedResponse: any = await (client as any).request({
+                const signedResponse: any = await provider.request({
                     method: 'hedera_signTransaction',
                     params: {
                         signerAccountId: hip30Id,
@@ -80,7 +81,7 @@ export function useHederaSigner() {
                 // Response format varies by wallet, but usually contains a signedTransaction or similar
                 const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
 
-                const executeResponse: any = await (client as any).request({
+                const executeResponse: any = await provider.request({
                     method: 'hedera_executeTransaction',
                     params: {
                         signerAccountId: hip30Id,
@@ -93,10 +94,10 @@ export function useHederaSigner() {
             console.error("Native Bridge Error:", error);
             throw error;
         }
-    }, [client, address, chain]);
+    }, [connector, address, chain]);
 
     useEffect(() => {
-        if (isConnected && client && address) {
+        if (isConnected && connector && address) {
             setSigner({
                 executeTransaction,
                 address
@@ -104,7 +105,7 @@ export function useHederaSigner() {
         } else {
             setSigner(null);
         }
-    }, [client, isConnected, address, executeTransaction]);
+    }, [connector, isConnected, address, executeTransaction]);
 
     return { signer, isConnected };
 }
