@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi';
 import { useEffect, useState, useCallback } from 'react';
 
 /**
- * Robust utility to convert Uint8Array to Base64 in a browser environment.
+ * Utility to convert Uint8Array to Base64 (Standard Specification)
  */
 function bytesToBase64(bytes: Uint8Array): string {
     let binary = '';
@@ -16,16 +16,13 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /**
- * Hook to bridge the Wagmi/AppKit connector to the Hedera WalletConnect v2 RPC protocol.
- * Optimized for HashPack and Blade browser extensions.
+ * Hook: useHederaSigner
+ * Pure implementation to route Hedera transactions through WalletConnect bridge.
  */
 export function useHederaSigner() {
     const { isConnected, address, chain, connector } = useAccount();
     const [signer, setSigner] = useState<any | null>(null);
 
-    /**
-     * Executes a Hedera Transaction using the connected WalletConnect session.
-     */
     const executeTransaction = useCallback(async (transaction: any) => {
         if (!connector || !address) throw new Error("Wallet not connected");
 
@@ -33,55 +30,41 @@ export function useHederaSigner() {
             // 1. Resolve Hedera Identities and Network
             const network = chain?.id === 295 ? 'mainnet' : 'testnet';
             const hederaId = localStorage.getItem('glowswap_last_account_id');
-            if (!hederaId) throw new Error("Hedera Account ID not resolved yet. Please reconnect.");
+            if (!hederaId) throw new Error("Hedera Account ID (0.0.x) not resolved.");
 
-            // 2. Prepare Transaction for HashPack/Blade
+            // 2. Prepare Transaction using Hedera SDK logic
             const { AccountId, TransactionId } = await import('@hashgraph/sdk');
-            const defaultNodeId = '0.0.3'; // Standard testnet node
-            
             if (!transaction.isFrozen()) {
                 transaction.setTransactionId(TransactionId.generate(AccountId.fromString(hederaId)));
-                transaction.setNodeAccountIds([AccountId.fromString(defaultNodeId)]);
+                transaction.setNodeAccountIds([AccountId.fromString('0.0.3')]); // Standard node
                 transaction.freeze();
             }
 
-            // 3. Serialize to Base64 using robust browser utility
-            const txBytes = transaction.toBytes();
-            const txBase64 = bytesToBase64(txBytes);
-
+            // 3. Serialize
+            const txBase64 = bytesToBase64(transaction.toBytes());
             const hip30Id = `hedera:${network}:${hederaId}`;
 
-            // 4. Trigger the Wallet Pop-up via RPC
-            console.log(`Executing transaction for ${hip30Id} via hedera_signAndExecuteTransaction...`);
-            
+            // 4. Access the raw Provider
             const provider: any = await connector.getProvider();
-
-            // Try to extract the WalletConnect SignClient for deep Hedera-native RPC bypassing
+            
+            // Deep Drill to SignClient (Bypasses EVM layer validation)
             const signClient = provider?.signer?.client || provider?.client;
             const sessionTopic = provider?.session?.topic || provider?.signer?.session?.topic;
 
             if (signClient && sessionTopic) {
-                console.log("Using deep WalletConnect SignClient routing...");
+                console.log("Routing via native SignClient...");
                 
-                // FORCE INJECT HEDERA NAMESPACE to bypass Wagmi/AppKit EVM strict constraints
+                // Inject namespace if missing (Safety check)
                 try {
-                    const activeSession = signClient.session.get(sessionTopic);
-                    if (activeSession && !activeSession.namespaces['hedera']) {
-                        console.log("Injecting Hedera namespace into active EVM session...");
-                        activeSession.namespaces['hedera'] = {
-                            accounts: [`hedera:${network}:${hederaId}`],
-                            methods: [
-                                'hedera_signAndExecuteTransaction',
-                                'hedera_signTransaction',
-                                'hedera_executeTransaction',
-                                'hedera_signMessage'
-                            ],
-                            events: ['chainChanged', 'accountsChanged']
-                        };
-                    }
-                } catch (injectionError) {
-                    console.warn("Failed to inject namespace, continuing anyway...", injectionError);
-                }
+                   const session = signClient.session.get(sessionTopic);
+                   if (session && !session.namespaces['hedera']) {
+                       session.namespaces['hedera'] = {
+                           accounts: [`hedera:${network}:${hederaId}`],
+                           methods: ['hedera_signAndExecuteTransaction', 'hedera_signTransaction', 'hedera_signMessage'],
+                           events: ['chainChanged', 'accountsChanged']
+                       };
+                   }
+                } catch (e) { /* silent fail */ }
 
                 return await signClient.request({
                     topic: sessionTopic,
@@ -96,7 +79,7 @@ export function useHederaSigner() {
                 });
             }
 
-            // Fallback to standard provider bridge if signClient is unavailable
+            // Standard fallback
             return await provider.request({
                 method: 'hedera_signAndExecuteTransaction',
                 params: {
@@ -106,17 +89,14 @@ export function useHederaSigner() {
             });
 
         } catch (error: any) {
-            console.error("Native Bridge Error:", error);
+            console.error("Signer Error:", error);
             throw error;
         }
     }, [connector, address, chain]);
 
     useEffect(() => {
         if (isConnected && connector && address) {
-            setSigner({
-                executeTransaction,
-                address
-            });
+            setSigner({ executeTransaction, address });
         } else {
             setSigner(null);
         }

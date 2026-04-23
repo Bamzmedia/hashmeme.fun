@@ -23,15 +23,15 @@ const wagmiAdapter = new WagmiAdapter({
     ssr: true
 });
 
-// 1. Fully Populated Metadata
+// 5. Build Metadata (Requirement: Fully Populated)
 const metadata = {
     name: "GlowSwap Protocol",
     description: "Institutional-grade DeFi & Meme Launchpad on Hedera",
     url: "https://glowswap.vercel.app",
-    icons: ["https://glowswap.vercel.app/favicon.ico", "https://glowswap.vercel.app/logo.png"]
+    icons: ["https://glowswap.vercel.app/logo.png", "https://glowswap.vercel.app/favicon.ico"]
 };
 
-// 2. Optimized AppKit Initialization for Hedera
+// 6. Initialize AppKit
 createAppKit({
     adapters: [wagmiAdapter],
     networks: [hedera, hederaTestnet],
@@ -39,20 +39,15 @@ createAppKit({
     metadata,
     features: {
         analytics: true,
-        email: false, // Disabled for cleaner Hedera modal
-        socials: [], // Standardize for Ledger focus
+        email: false,
+        socials: [],
     },
     themeMode: 'dark',
-    themeVariables: {
-        '--w3m-accent': '#3b82f6',
-        '--w3m-border-radius-master': '18px',
-    },
-    // Featured Hedera Wallets
     featuredWalletIds: [
         'bf33f7f2057d4a37bffbc1ca37599026', // HashPack
         '22515b7c7b744d0a80e698380e227092'  // Blade
     ],
-    // 3. Precision Hedera Namespace Bridge
+    // OPTIONAL NAMESPACES for Hedera native methods
     ...({
         optionalNamespaces: {
             hedera: {
