@@ -54,39 +54,72 @@ export function useHederaSigner() {
             if (signClient && sessionTopic) {
                 console.log("Routing via native SignClient...");
                 
-                // Inject namespace if missing (Safety check)
+                // Inject namespace if missing
                 try {
                    const session = signClient.session.get(sessionTopic);
                    if (session && !session.namespaces['hedera']) {
                        session.namespaces['hedera'] = {
                            accounts: [`hedera:${network}:${hederaId}`],
-                           methods: ['hedera_signAndExecuteTransaction', 'hedera_signTransaction', 'hedera_signMessage'],
+                           methods: ['hedera_signAndExecuteTransaction', 'hedera_signTransaction', 'hedera_executeTransaction', 'hedera_signMessage'],
                            events: ['chainChanged', 'accountsChanged']
                        };
                    }
                 } catch (e) { /* silent fail */ }
 
-                return await signClient.request({
-                    topic: sessionTopic,
-                    chainId: `hedera:${network}`,
-                    request: {
-                        method: 'hedera_signAndExecuteTransaction',
-                        params: {
-                            signerAccountId: hip30Id,
-                            transactionList: txBase64
+                try {
+                    return await signClient.request({
+                        topic: sessionTopic,
+                        chainId: `hedera:${network}`,
+                        request: {
+                            method: 'hedera_signAndExecuteTransaction',
+                            params: { signerAccountId: hip30Id, transactionList: txBase64 }
                         }
+                    });
+                } catch (rpcError: any) {
+                    if (rpcError.message?.includes("Unsupported method") || rpcError.code === -32601) {
+                        console.warn("signAndExecute unsupported, falling back to sign-then-execute...");
+                        const signedResponse = await signClient.request({
+                            topic: sessionTopic,
+                            chainId: `hedera:${network}`,
+                            request: {
+                                method: 'hedera_signTransaction',
+                                params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                            }
+                        });
+                        const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                        return await signClient.request({
+                            topic: sessionTopic,
+                            chainId: `hedera:${network}`,
+                            request: {
+                                method: 'hedera_executeTransaction',
+                                params: { signerAccountId: hip30Id, transactionList: signedTx }
+                            }
+                        });
                     }
-                });
+                    throw rpcError;
+                }
             }
 
-            // Standard fallback
-            return await provider.request({
-                method: 'hedera_signAndExecuteTransaction',
-                params: {
-                    signerAccountId: hip30Id,
-                    transactionList: txBase64
+            // Standard provider fallback with resilient retry
+            try {
+                return await provider.request({
+                    method: 'hedera_signAndExecuteTransaction',
+                    params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                });
+            } catch (rpcError: any) {
+                if (rpcError.message?.includes("Unsupported method") || rpcError.code === -32601) {
+                    const signedResponse = await provider.request({
+                        method: 'hedera_signTransaction',
+                        params: { signerAccountId: hip30Id, transactionList: txBase64 }
+                    });
+                    const signedTx = signedResponse.signedTransaction || signedResponse.transactionList || signedResponse;
+                    return await provider.request({
+                        method: 'hedera_executeTransaction',
+                        params: { signerAccountId: hip30Id, transactionList: signedTx }
+                    });
                 }
-            });
+                throw rpcError;
+            }
 
         } catch (error: any) {
             console.error("Signer Error:", error);
